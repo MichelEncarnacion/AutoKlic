@@ -1,76 +1,91 @@
-import {
-    PhoneIcon,
-    EyeIcon,
-    CurrencyDollarIcon
-} from '@heroicons/react/24/outline';
-import { useEffect } from 'react';
-import AOS from 'aos';
-import 'aos/dist/aos.css';
+// src/components/Process.jsx
+import { PhoneIcon, MagnifyingGlassIcon, CurrencyDollarIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
+// Note: AOS is initialized globally in App.jsx — do not call AOS.init() here
 
 const pasos = [
-    {
-        titulo: '1. Contáctanos',
-        descripcion: 'Déjanos tus datos y te contactaremos en minutos.',
-        icono: PhoneIcon
-    },
-    {
-        titulo: '2. Revisión',
-        descripcion: 'Inspeccionamos el vehículo o buscamos el que te interesa.',
-        icono: EyeIcon
-    },
-    {
-        titulo: '3. Compra/Venta',
-        descripcion: 'Finalizamos el trato de forma segura y rápida.',
-        icono: CurrencyDollarIcon
-    }
+  {
+    numero: '01',
+    titulo: 'Contáctanos',
+    descripcion: 'Déjanos tus datos y un asesor te contactará en minutos para entender lo que buscas.',
+    icono: PhoneIcon,
+  },
+  {
+    numero: '02',
+    titulo: 'Revisión',
+    descripcion: 'Inspeccionamos el vehículo o buscamos el que te interesa dentro de nuestro inventario.',
+    icono: MagnifyingGlassIcon,
+  },
+  {
+    numero: '03',
+    titulo: 'Compra / Venta',
+    descripcion: 'Finalizamos el trato de forma segura, rápida y con toda la documentación en regla.',
+    icono: CurrencyDollarIcon,
+  },
 ];
 
 export default function Process() {
-    useEffect(() => {
-        AOS.init({ duration: 800, once: true });
-    }, []);
+  return (
+    <section id="proceso" className="py-20 sm:py-28 bg-gray-950 text-white overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
 
-    return (
-        <section id="proceso" className="py-24 bg-gray-50">
-            <div className="container mx-auto px-6">
-                <h2 className="text-4xl font-bold text-center mb-16 text-gray-900" data-aos="fade-up">
-                    ¿Cómo funciona?
-                </h2>
+        {/* Header */}
+        <div className="text-center mb-16" data-aos="fade-up">
+          <p className="flex items-center justify-center gap-2 text-red-400 text-xs font-semibold tracking-widest uppercase mb-4">
+            <span className="w-6 h-px bg-red-400" />
+            Simple y transparente
+            <span className="w-6 h-px bg-red-400" />
+          </p>
+          <h2 className="font-heading text-4xl sm:text-5xl font-bold text-white">
+            ¿Cómo funciona?
+          </h2>
+        </div>
 
-                <div className="relative flex flex-col md:flex-row md:items-start items-center md:justify-between gap-14 md:gap-10 max-w-6xl mx-auto">
+        {/* Steps */}
+        <div className="grid gap-8 md:grid-cols-3 relative">
+          {/* Connector line (desktop only) */}
+          <div className="hidden md:block absolute top-10 left-[calc(16.66%+2rem)] right-[calc(16.66%+2rem)] h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-                    {/* Línea vertical en móvil, horizontal en desktop */}
-                    <div className="absolute md:top-8 md:left-0 md:w-full md:h-0.5 top-0 left-1/2 w-0.5 h-full bg-gray-300 z-0 transform md:translate-y-0 -translate-x-1/2"></div>
+          {pasos.map((paso, i) => {
+            const Icon = paso.icono;
+            return (
+              <div
+                key={i}
+                className="relative flex flex-col items-center text-center p-8 rounded-2xl bg-white/4 border border-white/8 hover:border-white/15 hover:bg-white/6 transition-all duration-300 group"
+                data-aos="fade-up"
+                data-aos-delay={i * 100}
+              >
+                {/* Step number */}
+                <span className="font-heading text-6xl font-bold text-white/8 absolute top-6 right-6 leading-none select-none">
+                  {paso.numero}
+                </span>
 
-                    {pasos.map((paso, i) => {
-                        const Icon = paso.icono;
-                        return (
-                            <div
-                                key={i}
-                                className="relative z-10 flex flex-col items-center text-center w-full max-w-xs"
-                                data-aos="fade-up"
-                                data-aos-delay={i * 150}
-                            >
-                                <div className="bg-white border-4 border-red-500 rounded-full p-4 mb-4 shadow-md">
-                                    <Icon className="h-8 w-8 text-red-600" />
-                                </div>
-                                <h3 className="text-lg font-bold text-gray-800">{paso.titulo}</h3>
-                                <p className="text-sm text-gray-600 mt-2">{paso.descripcion}</p>
-                            </div>
-                        );
-                    })}
+                {/* Icon */}
+                <div className="w-16 h-16 rounded-2xl bg-red-600/10 border border-red-500/20 flex items-center justify-center mb-6 group-hover:bg-red-600/20 transition-colors duration-300">
+                  <Icon className="h-7 w-7 text-red-400" />
                 </div>
 
-                {/* CTA Final */}
-                <div className="mt-20 text-center" data-aos="zoom-in-up">
-                    <a
-                        href="#contacto"
-                        className="inline-block bg-red-600 text-white px-10 py-3 rounded-full text-lg font-semibold shadow-lg hover:bg-red-700 transition hover:scale-105"
-                    >
-                        Comienza ahora
-                    </a>
-                </div>
-            </div>
-        </section>
-    );
+                <h3 className="font-heading text-xl font-bold text-white mb-3">
+                  {paso.numero}. {paso.titulo}
+                </h3>
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  {paso.descripcion}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* CTA */}
+        <div className="mt-14 text-center" data-aos="fade-up">
+          <a
+            href="#contacto"
+            className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-8 py-3.5 rounded-lg text-sm font-semibold tracking-wide transition-all duration-200 hover:shadow-lg hover:shadow-red-600/25"
+          >
+            Comienza ahora
+            <ArrowRightIcon className="h-4 w-4" />
+          </a>
+        </div>
+      </div>
+    </section>
+  );
 }

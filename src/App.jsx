@@ -25,11 +25,21 @@ import Usuarios from './pages/admin/Usuarios'
 
 import ProtectedRoute from './components/admin/ProtectedRoute'
 
+function HomeLayout({ children }) {
+  return (
+    <>
+      <Navbar />
+      <main className="pt-16">{children}</main>
+      <Footer />
+    </>
+  )
+}
+
 function PublicLayout({ children }) {
   return (
     <>
       <Navbar />
-      <main className="pt-24">{children}</main>
+      <main className="pt-16">{children}</main>
       <Footer />
     </>
   )
@@ -43,9 +53,9 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={
-        <PublicLayout>
+        <HomeLayout>
           <Hero /><FeaturedCars /><Process /><ContactForm />
-        </PublicLayout>
+        </HomeLayout>
       } />
       <Route path="/autos/:modelo" element={<PublicLayout><AutoDetalle /></PublicLayout>} />
       <Route path="/catalogo" element={<PublicLayout><Catalogo /></PublicLayout>} />

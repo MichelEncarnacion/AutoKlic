@@ -25,7 +25,8 @@
       "Bash(cmd //c \"rd /s /q node_modules\\\\date-fns\")",
       "Bash(powershell -Command \"Remove-Item -Path ''node_modules\\\\date-fns'' -Recurse -Force\")",
       "Bash(powershell -Command \"Get-ChildItem -Path ''node_modules\\\\date-fns'' -Recurse | Measure-Object\")",
-      "Bash(powershell -Command \":*)"
+      "Bash(powershell -Command \":*)",
+      "Bash(node -e \"require\\(''''@heroicons/react/24/outline''''\\)\")"
     ]
   }
 }
