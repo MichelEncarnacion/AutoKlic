@@ -1,5 +1,7 @@
+// src/pages/Catalogo.jsx
 import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
+import { AdjustmentsHorizontalIcon, XMarkIcon, ArrowRightIcon } from '@heroicons/react/24/outline'
 import { supabase } from '../lib/supabase'
 
 function toSlug(str) {
@@ -7,48 +9,73 @@ function toSlug(str) {
 }
 
 function formatPrice(price) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(price)
+  return new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    maximumFractionDigits: 0,
+  }).format(price)
 }
 
 const STATUS_LABELS = { available: 'Disponible', reserved: 'Reservado', sold: 'Vendido' }
 const STATUS_COLORS = {
   available: 'bg-green-100 text-green-700',
   reserved: 'bg-yellow-100 text-yellow-700',
-  sold: 'bg-gray-100 text-gray-500',
+  sold:      'bg-gray-100 text-gray-500',
 }
 
+const EMPTY_FILTERS = { marca: '', transmision: '', minPrecio: '', maxPrecio: '', minAño: '', maxAño: '' }
+
 export default function Catalogo() {
-  const [cars, setCars] = useState([])
+  const [cars, setCars]       = useState([])
   const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState({ marca: '', transmision: '', minPrecio: '', maxPrecio: '', minAño: '', maxAño: '' })
+  const [filters, setFilters] = useState(EMPTY_FILTERS)
+  const [showFilters, setShowFilters] = useState(false)
 
   useEffect(() => {
-    supabase.from('cars').select('*').eq('visible', true).then(({ data }) => {
-      setCars(data ?? [])
-      setLoading(false)
-    })
+    supabase
+      .from('cars')
+      .select('*')
+      .eq('visible', true)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        setCars(data ?? [])
+        setLoading(false)
+      })
   }, [])
 
-  const marcas = useMemo(() => [...new Set(cars.map(c => c.marca))].sort(), [cars])
-  const transmisiones = useMemo(() => [...new Set(cars.map(c => c.transmision))].sort(), [cars])
+  // Only unique non-null values for dropdowns
+  const marcas = useMemo(
+    () => [...new Set(cars.map(c => c.marca).filter(Boolean))].sort(),
+    [cars]
+  )
+  const transmisiones = useMemo(
+    () => [...new Set(cars.map(c => c.transmision).filter(Boolean))].sort(),
+    [cars]
+  )
 
   const filtered = useMemo(() => cars.filter(c => {
-    if (filters.marca && c.marca !== filters.marca) return false
+    if (filters.marca       && c.marca       !== filters.marca)       return false
     if (filters.transmision && c.transmision !== filters.transmision) return false
-    if (filters.minPrecio && c.precio < Number(filters.minPrecio)) return false
-    if (filters.maxPrecio && c.precio > Number(filters.maxPrecio)) return false
-    if (filters.minAño && c.año < Number(filters.minAño)) return false
-    if (filters.maxAño && c.año > Number(filters.maxAño)) return false
+    if (filters.minPrecio   && Number(c.precio) < Number(filters.minPrecio)) return false
+    if (filters.maxPrecio   && Number(c.precio) > Number(filters.maxPrecio)) return false
+    if (filters.minAño      && Number(c.año)    < Number(filters.minAño))    return false
+    if (filters.maxAño      && Number(c.año)    > Number(filters.maxAño))    return false
     return true
   }), [cars, filters])
+
+  const hasActiveFilters = Object.values(filters).some(Boolean)
 
   function setFilter(key, value) {
     setFilters(prev => ({ ...prev, [key]: value }))
   }
 
+  const inputClass =
+    'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-400 transition-all'
+
   if (loading) return (
-    <div className="max-w-7xl mx-auto px-4 py-12">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+      <div className="h-10 w-48 bg-gray-100 rounded-lg animate-pulse mb-8" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {[...Array(6)].map((_, i) => (
           <div key={i} className="bg-gray-100 rounded-2xl h-80 animate-pulse" />
         ))}
@@ -57,75 +84,205 @@ export default function Catalogo() {
   )
 
   return (
-    <section className="max-w-7xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">Catálogo de Autos</h1>
-      <p className="text-gray-500 mb-8">{filtered.length} vehículo{filtered.length !== 1 ? 's' : ''} disponible{filtered.length !== 1 ? 's' : ''}</p>
+    <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-8">
-        <select value={filters.marca} onChange={e => setFilter('marca', e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="">Todas las marcas</option>
-          {marcas.map(m => <option key={m}>{m}</option>)}
-        </select>
-        <select value={filters.transmision} onChange={e => setFilter('transmision', e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="">Transmisión</option>
-          {transmisiones.map(t => <option key={t}>{t}</option>)}
-        </select>
-        <input type="number" placeholder="Precio mínimo" value={filters.minPrecio}
-          onChange={e => setFilter('minPrecio', e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        <input type="number" placeholder="Precio máximo" value={filters.maxPrecio}
-          onChange={e => setFilter('maxPrecio', e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        <input type="number" placeholder="Año desde" value={filters.minAño}
-          onChange={e => setFilter('minAño', e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-28 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        <input type="number" placeholder="Año hasta" value={filters.maxAño}
-          onChange={e => setFilter('maxAño', e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-28 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        {Object.values(filters).some(Boolean) && (
-          <button onClick={() => setFilters({ marca: '', transmision: '', minPrecio: '', maxPrecio: '', minAño: '', maxAño: '' })}
-            className="text-sm text-blue-600 hover:underline px-2">
-            Limpiar filtros
-          </button>
-        )}
+      {/* Header */}
+      <div className="flex items-end justify-between gap-4 mb-8">
+        <div>
+          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-gray-900">
+            Catálogo de Autos
+          </h1>
+          <p className="text-gray-400 text-sm mt-1">
+            {filtered.length} vehículo{filtered.length !== 1 ? 's' : ''} disponible{filtered.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        {/* Mobile filter toggle */}
+        <button
+          onClick={() => setShowFilters(v => !v)}
+          className="flex lg:hidden items-center gap-2 border border-gray-200 hover:border-gray-300 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 transition-colors"
+        >
+          <AdjustmentsHorizontalIcon className="h-4 w-4" />
+          Filtros
+          {hasActiveFilters && (
+            <span className="w-2 h-2 rounded-full bg-red-500" />
+          )}
+        </button>
       </div>
 
-      {filtered.length === 0 ? (
-        <p className="text-gray-500 text-center py-16">No se encontraron autos con los filtros seleccionados.</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map(car => (
-            <div key={car.id} className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition">
-              <div className="h-48 bg-gray-100 overflow-hidden">
-                {car.imagenes?.[0]
-                  ? <img src={car.imagenes[0]} alt={car.modelo} className="w-full h-full object-cover" />
-                  : <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">Sin imagen</div>
-                }
+      <div className="flex flex-col lg:flex-row gap-8">
+
+        {/* Filters sidebar */}
+        <aside className={`lg:w-64 shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
+          <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm sticky top-24">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-heading text-lg font-bold text-gray-900">Filtros</h2>
+              {hasActiveFilters && (
+                <button
+                  onClick={() => setFilters(EMPTY_FILTERS)}
+                  className="flex items-center gap-1 text-xs font-semibold text-red-500 hover:text-red-700 transition-colors"
+                >
+                  <XMarkIcon className="h-3.5 w-3.5" />
+                  Limpiar
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-5">
+              {/* Marca */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Marca
+                </label>
+                <select
+                  value={filters.marca}
+                  onChange={e => setFilter('marca', e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">Todas las marcas</option>
+                  {marcas.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
               </div>
-              <div className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-sm text-gray-500">{car.marca}</p>
-                    <h3 className="font-semibold text-gray-900">{car.modelo}</h3>
-                    <p className="text-sm text-gray-500">{car.año} · {car.kilometraje?.toLocaleString()} km</p>
-                  </div>
-                  <span className={`text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap ${STATUS_COLORS[car.status]}`}>
-                    {STATUS_LABELS[car.status]}
-                  </span>
+
+              {/* Transmisión */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Transmisión
+                </label>
+                <select
+                  value={filters.transmision}
+                  onChange={e => setFilter('transmision', e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">Todas</option>
+                  {transmisiones.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Precio */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Precio (MXN)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    placeholder="Mín"
+                    value={filters.minPrecio}
+                    onChange={e => setFilter('minPrecio', e.target.value)}
+                    className={inputClass}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Máx"
+                    value={filters.maxPrecio}
+                    onChange={e => setFilter('maxPrecio', e.target.value)}
+                    className={inputClass}
+                  />
                 </div>
-                <p className="mt-3 text-xl font-bold text-blue-600">{formatPrice(car.precio)}</p>
-                <Link to={`/autos/${toSlug(car.modelo)}`}
-                  className="mt-3 block text-center bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 rounded-lg transition">
-                  Ver detalles
-                </Link>
+              </div>
+
+              {/* Año */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Año
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    placeholder="Desde"
+                    value={filters.minAño}
+                    onChange={e => setFilter('minAño', e.target.value)}
+                    className={inputClass}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Hasta"
+                    value={filters.maxAño}
+                    onChange={e => setFilter('maxAño', e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
               </div>
             </div>
-          ))}
+          </div>
+        </aside>
+
+        {/* Car grid */}
+        <div className="flex-1 min-w-0">
+          {filtered.length === 0 ? (
+            <div className="text-center py-20">
+              <p className="text-4xl mb-4">🔍</p>
+              <p className="font-semibold text-gray-700 mb-1">Sin resultados</p>
+              <p className="text-sm text-gray-400 mb-6">
+                No hay autos con los filtros seleccionados.
+              </p>
+              <button
+                onClick={() => setFilters(EMPTY_FILTERS)}
+                className="text-sm font-semibold text-red-600 hover:text-red-700 transition-colors"
+              >
+                Limpiar filtros
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+              {filtered.map(car => (
+                <Link
+                  key={car.id}
+                  to={`/autos/${toSlug(car.modelo)}`}
+                  className="group bg-white rounded-2xl border border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300"
+                >
+                  {/* Image */}
+                  <div className="relative aspect-[16/10] bg-gray-100 overflow-hidden">
+                    {car.imagenes?.[0] ? (
+                      <img
+                        src={car.imagenes[0]}
+                        alt={`${car.marca} ${car.modelo}`}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300 text-sm">
+                        Sin imagen
+                      </div>
+                    )}
+                    {/* Status badge — uses car.estado */}
+                    {car.estado && (
+                      <span className={`absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_COLORS[car.estado] ?? 'bg-gray-100 text-gray-600'}`}>
+                        {STATUS_LABELS[car.estado] ?? car.estado}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="p-4">
+                    <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-0.5">
+                      {car.marca}
+                    </p>
+                    <h3 className="font-heading text-base font-bold text-gray-900 leading-snug">
+                      {car.modelo}
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {car.año}{car.kilometraje ? ` · ${Number(car.kilometraje).toLocaleString('es-MX')} km` : ''}
+                    </p>
+                    <div className="flex items-center justify-between mt-3">
+                      <p className="font-heading text-lg font-bold text-red-600">
+                        {formatPrice(car.precio)}
+                      </p>
+                      <span className="flex items-center gap-1 text-xs font-semibold text-gray-400 group-hover:text-red-500 transition-colors">
+                        Ver más
+                        <ArrowRightIcon className="h-3.5 w-3.5" />
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </section>
   )
 }
