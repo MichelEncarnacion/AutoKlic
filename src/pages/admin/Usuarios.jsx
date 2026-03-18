@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
-import RoleBadge from '../../components/admin/RoleBadge'
 
 const ROLES = ['admin', 'seller', 'viewer']
 const ROLE_LABELS = { admin: 'Admin', seller: 'Vendedor', viewer: 'Visor' }
