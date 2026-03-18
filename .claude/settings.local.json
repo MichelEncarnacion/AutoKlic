@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm list:*)",
+      "Bash(echo \"EXIT_CODE: $?\")",
+      "Bash(timeout 15 npm run dev)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npx vite:*)",
+      "Bash(node_modules/.bin/vite build:*)",
+      "Bash(cmd /c \"cd /d C:\\\\Users\\\\miche\\\\OneDrive\\\\Escritorio\\\\AutoApp && node_modules\\\\.bin\\\\vite build 2>&1\")",
+      "Bash(powershell -Command \"Set-Location 'C:\\\\Users\\\\miche\\\\OneDrive\\\\Escritorio\\\\AutoApp'; node .\\\\node_modules\\\\.bin\\\\vite build 2>&1\" 2>&1)",
+      "Bash(powershell -Command \"Set-Location 'C:\\\\Users\\\\miche\\\\OneDrive\\\\Escritorio\\\\AutoApp'; & npm run build 2>&1\" 2>&1)",
+      "Bash(npm run:*)",
+      "Bash(cd:*)",
+      "Bash(npm cache:*)",
+      "Bash(rm -rf node_modules/date-fns)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(rm -rf \"node_modules/date-fns/locale\")",
+      "Bash(cmd //c \"rmdir /s /q node_modules\\\\date-fns\")",
+      "Bash(cmd //c \"rd /s /q node_modules\\\\date-fns\\\\locale\\\\af\")",
+      "Bash(cmd //c \"rd /s /q node_modules\\\\date-fns\\\\locale\")",
+      "Bash(cmd //c \"rd /s /q node_modules\\\\date-fns\")",
+      "Bash(powershell -Command \"Remove-Item -Path ''node_modules\\\\date-fns'' -Recurse -Force\")",
+      "Bash(powershell -Command \"Get-ChildItem -Path ''node_modules\\\\date-fns'' -Recurse | Measure-Object\")",
+      "Bash(powershell -Command \":*)"
+    ]
+  }
+}

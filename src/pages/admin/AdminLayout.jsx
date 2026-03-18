@@ -27,6 +27,7 @@ export default function AdminLayout() {
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1">
+          {/* eslint-disable-next-line no-unused-vars */}
           {navItems.map(({ to, label, icon: Icon }) => (
             <NavLink key={to} to={to}
               className={({ isActive }) =>

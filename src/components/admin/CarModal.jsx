@@ -14,7 +14,7 @@ const STATUSES = [
 
 export default function CarModal({ car, onClose, onSaved }) {
   const isEdit = Boolean(car)
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
+  const { register, handleSubmit, formState: { isSubmitting } } = useForm({
     defaultValues: car ? {
       ...car,
       aire: car.aire ? 'true' : 'false',
