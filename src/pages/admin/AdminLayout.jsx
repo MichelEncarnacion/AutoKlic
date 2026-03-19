@@ -12,6 +12,7 @@ import {
   Bars3Icon,
   XMarkIcon,
   Squares2X2Icon,
+  UserCircleIcon,
 } from '@heroicons/react/24/outline'
 
 const navItems = [
@@ -64,6 +65,10 @@ export default function AdminLayout() {
 
       {/* Bottom */}
       <div className="px-3 py-4 border-t border-gray-100 space-y-1">
+        <NavLink to="/admin/perfil" className={linkClass} onClick={() => setOpen(false)}>
+          <UserCircleIcon className="w-5 h-5 shrink-0" />
+          Mi perfil
+        </NavLink>
         <NavLink to="/admin/ayuda" className={linkClass} onClick={() => setOpen(false)}>
           <QuestionMarkCircleIcon className="w-5 h-5 shrink-0" />
           Ayuda

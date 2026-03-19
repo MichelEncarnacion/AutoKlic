@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useContext } from 'react'
+import { useAuth } from '../../context/AuthContext'
 import { Link } from 'react-router-dom'
 import { format, startOfWeek, isAfter } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -42,6 +43,7 @@ function formatPrice(p) {
 }
 
 export default function Dashboard() {
+  const { profile } = useAuth()
   const [cars, setCars]   = useState([])
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
@@ -59,24 +61,26 @@ export default function Dashboard() {
 
   // ── Computed stats ──────────────────────────────────────────
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
+  const isSeller  = profile?.role === 'seller'
+  const myLeads   = isSeller ? leads.filter(l => l.assigned_to === profile?.id) : leads
 
   const totalCars      = cars.length
   const availableCars  = cars.filter(c => c.status === 'available').length
   const soldCars       = cars.filter(c => c.status === 'sold').length
   const reservedCars   = cars.filter(c => c.status === 'reserved').length
 
-  const totalLeads     = leads.length
-  const activeLeads    = leads.filter(l => ['pending', 'reviewing'].includes(l.status)).length
-  const closedLeads    = leads.filter(l => l.status === 'closed').length
-  const leadsThisWeek  = leads.filter(l => isAfter(new Date(l.created_at), weekStart)).length
+  const totalLeads     = myLeads.length
+  const activeLeads    = myLeads.filter(l => ['pending', 'reviewing'].includes(l.status)).length
+  const closedLeads    = myLeads.filter(l => l.status === 'closed').length
+  const leadsThisWeek  = myLeads.filter(l => isAfter(new Date(l.created_at), weekStart)).length
   const conversionRate = totalLeads > 0 ? Math.round((closedLeads / totalLeads) * 100) : 0
 
   const leadsByStatus = ['pending', 'reviewing', 'offer_made', 'closed'].map(s => ({
     status: s,
-    count: leads.filter(l => l.status === s).length,
+    count: myLeads.filter(l => l.status === s).length,
   }))
 
-  const recentLeads = leads.slice(0, 5)
+  const recentLeads = myLeads.slice(0, 5)
 
   // ── KPI cards ───────────────────────────────────────────────
   const kpis = [
@@ -89,7 +93,7 @@ export default function Dashboard() {
       href: '/admin/inventario',
     },
     {
-      label: 'Leads activos',
+      label: isSeller ? 'Mis leads activos' : 'Leads activos',
       value: loading ? '—' : activeLeads,
       sub: loading ? '' : `de ${totalLeads} total`,
       icon: UserGroupIcon,
@@ -97,7 +101,7 @@ export default function Dashboard() {
       href: '/admin/leads',
     },
     {
-      label: 'Leads esta semana',
+      label: isSeller ? 'Mis leads esta semana' : 'Leads esta semana',
       value: loading ? '—' : leadsThisWeek,
       sub: 'desde el lunes',
       icon: ArrowTrendingUpIcon,
@@ -152,7 +156,7 @@ export default function Dashboard() {
         {/* Leads por estado */}
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-900 text-sm">Pipeline de leads</h2>
+            <h2 className="font-semibold text-gray-900 text-sm">{isSeller ? 'Mi pipeline' : 'Pipeline de leads'}</h2>
             <Link to="/admin/leads" className="text-xs text-blue-600 hover:underline">Ver todos</Link>
           </div>
           {loading ? (
@@ -228,7 +232,7 @@ export default function Dashboard() {
       {/* Recent leads */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-gray-900 text-sm">Últimos leads</h2>
+          <h2 className="font-semibold text-gray-900 text-sm">{isSeller ? 'Mis últimos leads' : 'Últimos leads'}</h2>
           <Link to="/admin/leads" className="text-xs text-blue-600 hover:underline">Ver todos</Link>
         </div>
         {loading ? (

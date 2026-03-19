@@ -24,6 +24,7 @@ import Leads from './pages/admin/Leads'
 import Reportes from './pages/admin/Reportes'
 import Usuarios from './pages/admin/Usuarios'
 import Ayuda from './pages/admin/Ayuda'
+import Perfil from './pages/admin/Perfil'
 
 import ProtectedRoute from './components/admin/ProtectedRoute'
 
@@ -78,6 +79,7 @@ export default function App() {
           <ProtectedRoute requiredRole="admin"><Usuarios /></ProtectedRoute>
         } />
         <Route path="ayuda" element={<Ayuda />} />
+        <Route path="perfil" element={<Perfil />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
