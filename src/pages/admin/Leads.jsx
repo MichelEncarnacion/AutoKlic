@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
-import { TrashIcon } from '@heroicons/react/24/outline'
+import { TrashIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline'
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Nuevo' },
@@ -24,6 +24,10 @@ export default function Leads() {
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState(null)
+
+  // Filters
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
 
   const canEdit = profile?.role === 'admin' || profile?.role === 'seller'
   const canDelete = profile?.role === 'admin'
@@ -58,9 +62,69 @@ export default function Leads() {
     else { toast.success('Lead eliminado'); setLeads(l => l.filter(x => x.id !== id)) }
   }
 
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase()
+    return leads.filter(l => {
+      const matchSearch = !q || (
+        l.id.substring(0, 8).toLowerCase().includes(q) ||
+        (l.nombre ?? '').toLowerCase().includes(q) ||
+        (l.email ?? '').toLowerCase().includes(q) ||
+        (l.telefono ?? '').toLowerCase().includes(q) ||
+        (l.marca ?? '').toLowerCase().includes(q) ||
+        (l.modelo ?? '').toLowerCase().includes(q)
+      )
+      const matchStatus = !statusFilter || l.status === statusFilter
+      return matchSearch && matchStatus
+    })
+  }, [leads, search, statusFilter])
+
+  const clearFilters = () => { setSearch(''); setStatusFilter('') }
+  const hasFilters = search || statusFilter
+
   return (
     <div className="p-6">
-      <h1 className="text-xl font-bold text-gray-900 mb-6">Leads</h1>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Leads</h1>
+          <p className="text-sm text-gray-400 mt-0.5">
+            {filtered.length} de {leads.length} lead{leads.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="relative flex-1">
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar por folio, nombre, email, auto..."
+            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400"
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 bg-white"
+        >
+          <option value="">Todos los estados</option>
+          {STATUS_OPTIONS.map(s => (
+            <option key={s.value} value={s.value}>{s.label}</option>
+          ))}
+        </select>
+        {hasFilters && (
+          <button
+            onClick={clearFilters}
+            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+          >
+            <XMarkIcon className="w-4 h-4" />
+            Limpiar
+          </button>
+        )}
+      </div>
 
       {loading ? (
         <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-14 bg-gray-100 rounded-lg animate-pulse" />)}</div>
@@ -79,7 +143,7 @@ export default function Leads() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {leads.map(lead => (
+              {filtered.map(lead => (
                 <React.Fragment key={lead.id}>
                   <tr onClick={() => setExpanded(expanded === lead.id ? null : lead.id)}
                     className="hover:bg-gray-50 cursor-pointer transition">
@@ -135,8 +199,10 @@ export default function Leads() {
                   )}
                 </React.Fragment>
               ))}
-              {leads.length === 0 && (
-                <tr><td colSpan={7} className="text-center py-12 text-gray-400">No hay leads todavía</td></tr>
+              {filtered.length === 0 && (
+                <tr><td colSpan={7} className="text-center py-12 text-gray-400">
+                  {hasFilters ? 'No hay leads que coincidan con los filtros' : 'No hay leads todavía'}
+                </td></tr>
               )}
             </tbody>
           </table>
