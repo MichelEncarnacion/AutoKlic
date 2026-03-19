@@ -51,7 +51,7 @@ export default function Dashboard() {
   useEffect(() => {
     Promise.all([
       supabase.from('cars').select('id, marca, modelo, año, precio, status, visible, created_at'),
-      supabase.from('leads').select('id, nombre, marca, modelo, año, status, created_at').order('created_at', { ascending: false }),
+      supabase.from('leads').select('id, nombre, marca, modelo, año, status, assigned_to, created_at').order('created_at', { ascending: false }),
     ]).then(([{ data: c }, { data: l }]) => {
       setCars(c ?? [])
       setLeads(l ?? [])
