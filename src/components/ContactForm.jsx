@@ -6,8 +6,8 @@ const contactInfo = [
   {
     icon: PhoneIcon,
     label: 'Teléfono',
-    value: '+52 220 189 5426',
-    href: 'tel:+522201895426',
+    value: '+52 221 341 1834',
+    href: 'tel:+522213411834',
   },
   {
     icon: EnvelopeIcon,

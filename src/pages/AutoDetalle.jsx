@@ -1,7 +1,8 @@
 // src/pages/AutoDetalle.jsx
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeftIcon, PhoneIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline'
+import { FaWhatsapp } from 'react-icons/fa';
 import { Carousel } from 'react-responsive-carousel';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import { supabase } from '../lib/supabase';
@@ -176,23 +177,25 @@ export default function AutoDetalle() {
           )}
 
           {/* Action buttons */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <a
-              href="/#contacto"
-              className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:shadow-lg hover:shadow-red-600/20"
-            >
-              Me interesa este auto
-            </a>
-            <a
-              href="https://wa.me/522201895426"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 px-6 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200"
-            >
-              <PhoneIcon className="h-4 w-4" />
-              WhatsApp
-            </a>
-          </div>
+          {(() => {
+            const msg = encodeURIComponent(
+              `Hola, me interesa el *${auto.marca} ${auto.modelo} ${auto.año}* en *${formatPrice(auto.precio)}*. ¿Está disponible?`
+            )
+            const waUrl = `https://wa.me/522213411834?text=${msg}`
+            return (
+              <div className="flex flex-col sm:flex-row gap-3">
+                <a
+                  href={waUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2.5 bg-[#25D366] hover:bg-[#1ebe5b] text-white px-6 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:shadow-lg hover:shadow-green-400/25"
+                >
+                  <FaWhatsapp className="h-5 w-5" />
+                  Me interesa este auto
+                </a>
+              </div>
+            )
+          })()}
         </div>
       </div>
     </div>
