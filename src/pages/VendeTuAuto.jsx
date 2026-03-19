@@ -7,9 +7,11 @@ export default function VendeTuAuto() {
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm()
 
   async function onSubmit(data) {
-    const { data: lead, error } = await supabase
+    const id = crypto.randomUUID()
+    const { error } = await supabase
       .from('leads')
       .insert([{
+        id,
         marca: data.marca,
         modelo: data.modelo,
         año: Number(data.año),
@@ -19,14 +21,12 @@ export default function VendeTuAuto() {
         email: data.email,
         telefono: data.telefono,
       }])
-      .select('id')
-      .single()
 
     if (error) {
       alert('Ocurrió un error. Intenta de nuevo.')
       return
     }
-    setFolio(lead.id.substring(0, 8).toUpperCase())
+    setFolio(id.substring(0, 8).toUpperCase())
     reset()
   }
 
