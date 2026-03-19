@@ -22,6 +22,7 @@ import Inventario from './pages/admin/Inventario'
 import Leads from './pages/admin/Leads'
 import Reportes from './pages/admin/Reportes'
 import Usuarios from './pages/admin/Usuarios'
+import Ayuda from './pages/admin/Ayuda'
 
 import ProtectedRoute from './components/admin/ProtectedRoute'
 
@@ -74,6 +75,7 @@ export default function App() {
         <Route path="usuarios" element={
           <ProtectedRoute requiredRole="admin"><Usuarios /></ProtectedRoute>
         } />
+        <Route path="ayuda" element={<Ayuda />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
