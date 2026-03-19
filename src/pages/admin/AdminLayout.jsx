@@ -11,9 +11,11 @@ import {
   QuestionMarkCircleIcon,
   Bars3Icon,
   XMarkIcon,
+  Squares2X2Icon,
 } from '@heroicons/react/24/outline'
 
 const navItems = [
+  { to: '/admin/dashboard',  label: 'Dashboard',  icon: Squares2X2Icon },
   { to: '/admin/inventario', label: 'Inventario', icon: ArchiveBoxIcon },
   { to: '/admin/leads',      label: 'Leads',       icon: UserGroupIcon },
   { to: '/admin/reportes',   label: 'Reportes',    icon: ChartBarIcon },

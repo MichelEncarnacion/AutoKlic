@@ -18,6 +18,7 @@ import ResetPassword from './pages/ResetPassword'
 import NotFound from './pages/NotFound'
 
 import AdminLayout from './pages/admin/AdminLayout'
+import Dashboard from './pages/admin/Dashboard'
 import Inventario from './pages/admin/Inventario'
 import Leads from './pages/admin/Leads'
 import Reportes from './pages/admin/Reportes'
@@ -68,7 +69,8 @@ export default function App() {
       <Route path="/admin" element={
         <ProtectedRoute><AdminLayout /></ProtectedRoute>
       }>
-        <Route index element={<Navigate to="inventario" replace />} />
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<Dashboard />} />
         <Route path="inventario" element={<Inventario />} />
         <Route path="leads" element={<Leads />} />
         <Route path="reportes" element={<Reportes />} />
