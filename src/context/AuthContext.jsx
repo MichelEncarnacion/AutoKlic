@@ -16,6 +16,11 @@ export function AuthProvider({ children }) {
       .select('*')
       .eq('id', userId)
       .single()
+    if (data?.active === false) {
+      setLoading(false)
+      await signOut()
+      return
+    }
     setProfile(data)
   }
 
@@ -28,7 +33,7 @@ export function AuthProvider({ children }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
-      if (session?.user) loadProfile(session.user.id)
+      if (session?.user) loadProfile(session.user.id).catch(() => setLoading(false))
       else setProfile(null)
     })
 
