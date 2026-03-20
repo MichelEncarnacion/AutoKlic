@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { ArrowRightIcon, ArrowLeftIcon, InformationCircleIcon, CheckIcon } from '@heroicons/react/24/outline'
+import {
+  ArrowRightIcon, ArrowLeftIcon, InformationCircleIcon,
+  CheckIcon, ChartBarIcon,
+} from '@heroicons/react/24/outline'
 
-// 2025 Mexican market new-car MSRP averages in MXN
+// 2025 Mexican market MSRP by brand (fallback if ML returns no results)
 const BRAND_BASE = {
   'Chevrolet': 305000,  'Nissan': 295000,  'SEAT': 310000,   'Kia': 320000,
   'Hyundai': 315000,    'Renault': 290000, 'Fiat': 270000,   'Dodge': 300000,
@@ -14,78 +17,96 @@ const BRAND_BASE = {
   'Mercedes-Benz': 1150000, 'Audi': 1050000, 'Volvo': 980000, 'Lexus': 950000,
   'Cadillac': 1000000,  'Land Rover': 1350000, 'Porsche': 1800000,
 }
-const DEFAULT_BASE = 350000
-const BRANDS = Object.keys(BRAND_BASE).sort()
+const DEFAULT_BASE   = 350000
+const BUYING_MARGIN  = 0.78
+const BRANDS         = Object.keys(BRAND_BASE).sort()
 
 const CONDITIONS = [
-  { value: 'excelente', label: 'Excelente',  desc: 'Como nuevo, sin golpes ni rayones',       mult: 1.08 },
-  { value: 'bueno',     label: 'Bueno',      desc: 'Detalles menores, bien mantenido',         mult: 0.95 },
-  { value: 'regular',   label: 'Regular',    desc: 'Requiere algunos arreglos estéticos',      mult: 0.78 },
-  { value: 'danos',     label: 'Con daños',  desc: 'Golpes mayores, accidentes o mecánica',    mult: 0.58 },
+  { value: 'excelente', label: 'Excelente',  desc: 'Como nuevo, sin golpes ni rayones',    mult: 1.08 },
+  { value: 'bueno',     label: 'Bueno',      desc: 'Detalles menores, bien mantenido',      mult: 0.95 },
+  { value: 'regular',   label: 'Regular',    desc: 'Requiere algunos arreglos estéticos',   mult: 0.78 },
+  { value: 'danos',     label: 'Con daños',  desc: 'Golpes mayores, accidentes o mecánica', mult: 0.58 },
 ]
 
-// Business buying margin: AutoKlic buys at ~78% of market to allow resale profit
-const BUYING_MARGIN = 0.78
+// ── Mercado Libre via server-side proxy ─────────────────────────────────────
+async function fetchMLPrices(marca, modelo, año) {
+  try {
+    const params = new URLSearchParams({ marca, modelo, año })
+    const res    = await fetch(`/api/car-price?${params}`)
+    if (!res.ok) return null
+    const data = await res.json()
+    if (!data.found) return null
+    return { median: data.median, count: data.count }
+  } catch {
+    return null
+  }
+}
 
-function calcValue(data) {
-  const { marca, año, kilometraje, condicion, transmision, duenos, accidente, servicio, factura, precioLista } = data
+// ── Formula fallback (depreciation model) ──────────────────────────────────
+function formulaBase(marca, año, precioLista) {
   const age  = new Date().getFullYear() - Number(año)
-  // User-provided new price takes priority over brand average
   const base = precioLista && Number(precioLista) > 0
     ? Number(precioLista)
     : (BRAND_BASE[marca] ?? DEFAULT_BASE)
 
-  // --- Year depreciation (aggressive, Mexican market) ---
   let value = base
   for (let i = 0; i < age; i++) {
     const rate = i === 0 ? 0.25 : i === 1 ? 0.18 : i <= 3 ? 0.14 : i <= 5 ? 0.11 : 0.08
     value *= (1 - rate)
   }
+  return value
+}
 
-  // --- Mileage vs expected (15 000 km/year) ---
+// ── Adjustments on top of market price ─────────────────────────────────────
+function applyAdjustments(basePrice, data) {
+  const { año, kilometraje, condicion, transmision, duenos, accidente, servicio, factura } = data
+  let value = basePrice
+
+  // Km vs expected
+  const age        = new Date().getFullYear() - Number(año)
   const expectedKm = age * 15000
   const kmDiff     = Number(kilometraje) - expectedKm
-  // -3% per 10 000 km above expected, +1% per 10 000 km below
   const kmAdj = kmDiff > 0
-    ? Math.max(0.60, 1 - (kmDiff / 10000) * 0.03)
-    : Math.min(1.10, 1 + (Math.abs(kmDiff) / 10000) * 0.01)
+    ? Math.max(0.72, 1 - (kmDiff / 10000) * 0.025)
+    : Math.min(1.08, 1 + (Math.abs(kmDiff) / 10000) * 0.008)
   value *= kmAdj
 
-  // --- Condition ---
-  const cond = CONDITIONS.find(c => c.value === condicion)
-  value *= cond?.mult ?? 1
+  // Condition
+  value *= CONDITIONS.find(c => c.value === condicion)?.mult ?? 1
 
-  // --- Transmission: automatics hold value better ---
+  // Transmission
   if (transmision === 'manual') value *= 0.95
 
-  // --- Number of owners ---
+  // Owners
   if (duenos === '1')    value *= 1.05
   if (duenos === '3mas') value *= 0.88
 
-  // --- Accident history ---
+  // Accidents
   if (accidente === 'menor') value *= 0.90
   if (accidente === 'mayor') value *= 0.75
 
-  // --- Service history up to date ---
+  // Service
   if (servicio === 'si')  value *= 1.03
   if (servicio === 'no')  value *= 0.95
 
-  // --- Original invoice ---
+  // Invoice
   if (factura === 'si')  value *= 1.03
   if (factura === 'no')  value *= 0.98
 
-  value = Math.max(value, 30000)
+  return Math.max(value, 30000)
+}
 
-  const marketMid  = Math.round(value / 1000) * 1000
-  const marketLow  = Math.round(value * 0.93 / 1000) * 1000
-  const marketHigh = Math.round(value * 1.07 / 1000) * 1000
-
-  // Buying offer: apply business margin
-  const offerMid  = Math.round(value * BUYING_MARGIN / 1000) * 1000
-  const offerLow  = Math.round(value * BUYING_MARGIN * 0.95 / 1000) * 1000
-  const offerHigh = Math.round(value * BUYING_MARGIN * 1.05 / 1000) * 1000
-
-  return { marketLow, marketMid, marketHigh, offerLow, offerMid, offerHigh }
+function buildResult(adjustedValue, source) {
+  const r = (n, factor = 1) => Math.round(adjustedValue * factor / 1000) * 1000
+  return {
+    marketLow:  r(adjustedValue, 0.93),
+    marketMid:  r(adjustedValue, 1),
+    marketHigh: r(adjustedValue, 1.07),
+    offerLow:   r(adjustedValue, BUYING_MARGIN * 0.95),
+    offerMid:   r(adjustedValue, BUYING_MARGIN),
+    offerHigh:  r(adjustedValue, BUYING_MARGIN * 1.05),
+    source,
+  }
 }
 
 function fmt(n) {
@@ -93,10 +114,9 @@ function fmt(n) {
 }
 
 const currentYear = new Date().getFullYear()
-const years = Array.from({ length: currentYear - 1999 }, (_, i) => currentYear - i)
-
-const inputClass = 'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-400 transition-all'
-const labelClass = 'block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5'
+const years       = Array.from({ length: currentYear - 1999 }, (_, i) => currentYear - i)
+const inputClass  = 'w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-400 transition-all'
+const labelClass  = 'block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5'
 
 function RadioGroup({ label, name, options, register, rules, error, watch }) {
   const val = watch(name)
@@ -105,14 +125,9 @@ function RadioGroup({ label, name, options, register, rules, error, watch }) {
       <p className={labelClass}>{label} *</p>
       <div className="flex flex-wrap gap-2">
         {options.map(o => (
-          <label
-            key={o.value}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 cursor-pointer text-sm font-medium transition-all ${
-              val === o.value
-                ? 'border-red-500 bg-red-50 text-red-700'
-                : 'border-gray-200 text-gray-600 hover:border-gray-300'
-            }`}
-          >
+          <label key={o.value} className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 cursor-pointer text-sm font-medium transition-all ${
+            val === o.value ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+          }`}>
             <input type="radio" value={o.value} {...register(name, rules)} className="sr-only" />
             {val === o.value && <CheckIcon className="w-3.5 h-3.5" />}
             {o.label}
@@ -128,13 +143,31 @@ export default function ValuaTuAuto() {
   const [step, setStep]       = useState(1)
   const [result, setResult]   = useState(null)
   const [formData, setFormData] = useState(null)
+  const [loading, setLoading] = useState(false)
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm()
   const condicion = watch('condicion')
+  const req       = { required: 'Requerido' }
 
-  function onSubmit(data) {
-    setResult(calcValue(data))
+  async function onSubmit(data) {
+    setLoading(true)
+
+    // Try Mercado Libre first
+    const ml = await fetchMLPrices(data.marca, data.modelo, data.año)
+
+    let marketBase, source
+    if (ml) {
+      marketBase = ml.median
+      source     = { type: 'ml', count: ml.count }
+    } else {
+      marketBase = formulaBase(data.marca, data.año, data.precioLista)
+      source     = { type: 'formula' }
+    }
+
+    const adjusted = applyAdjustments(marketBase, data)
+    setResult(buildResult(adjusted, source))
     setFormData(data)
+    setLoading(false)
     setStep(2)
   }
 
@@ -142,21 +175,16 @@ export default function ValuaTuAuto() {
     return <Results result={result} formData={formData} onBack={() => setStep(1)} />
   }
 
-  const req = { required: 'Requerido' }
-
   return (
     <section className="max-w-2xl mx-auto px-4 py-12">
 
-      {/* Header */}
       <div className="text-center mb-10">
         <p className="flex items-center justify-center gap-2 text-red-500 text-xs font-semibold tracking-widest uppercase mb-3">
-          <span className="w-6 h-px bg-red-500" />
-          Valoración gratuita
-          <span className="w-6 h-px bg-red-500" />
+          <span className="w-6 h-px bg-red-500" />Valoración gratuita<span className="w-6 h-px bg-red-500" />
         </p>
         <h1 className="font-heading text-4xl font-bold text-gray-900 mb-3">¿Cuánto vale tu auto?</h1>
         <p className="text-gray-500 text-sm max-w-md mx-auto leading-relaxed">
-          Completa los datos de tu vehículo y obtén una estimación de precio al instante, sin costo y sin compromiso.
+          Completa los datos de tu vehículo y obtén una estimación basada en precios reales del mercado.
         </p>
       </div>
 
@@ -177,7 +205,7 @@ export default function ValuaTuAuto() {
             </div>
             <div>
               <label className={labelClass}>Modelo *</label>
-              <input type="text" placeholder="Ej. Jetta, Sentra, Civic..." {...register('modelo', req)} className={inputClass} />
+              <input type="text" placeholder="Ej. Aveo, Sentra, Civic..." {...register('modelo', req)} className={inputClass} />
               {errors.modelo && <p className="text-red-500 text-xs mt-1">{errors.modelo.message}</p>}
             </div>
             <div>
@@ -190,24 +218,18 @@ export default function ValuaTuAuto() {
             </div>
             <div>
               <label className={labelClass}>Kilometraje *</label>
-              <input type="number" placeholder="Ej. 45000" min={0} {...register('kilometraje', { ...req, min: { value: 0, message: 'Mínimo 0' } })} className={inputClass} />
+              <input type="number" placeholder="Ej. 45000" min={0}
+                {...register('kilometraje', { ...req, min: { value: 0, message: 'Mínimo 0' } })}
+                className={inputClass} />
               {errors.kilometraje && <p className="text-red-500 text-xs mt-1">{errors.kilometraje.message}</p>}
             </div>
-
             <div className="sm:col-span-2">
               <label className={labelClass}>
-                Precio de lista nuevo <span className="normal-case text-gray-400 font-normal">(opcional — mejora la precisión)</span>
+                Precio de lista nuevo <span className="normal-case text-gray-400 font-normal">(opcional)</span>
               </label>
-              <input
-                type="number"
-                placeholder="Ej. 305000 — precio nuevo de tu versión exacta"
-                min={0}
-                {...register('precioLista')}
-                className={inputClass}
-              />
-              <p className="text-xs text-gray-400 mt-1">
-                Si conoces el precio actual del auto nuevo, ingrésalo para una estimación más exacta.
-              </p>
+              <input type="number" placeholder="Ej. 305000 — mejora la precisión si ML no encuentra tu modelo"
+                min={0} {...register('precioLista')} className={inputClass} />
+              <p className="text-xs text-gray-400 mt-1">Solo se usa si no encontramos tu auto en Mercado Libre.</p>
             </div>
           </div>
         </div>
@@ -239,27 +261,31 @@ export default function ValuaTuAuto() {
         {/* Extra details */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
           <h2 className="font-semibold text-gray-800 text-sm uppercase tracking-wider">Detalles adicionales</h2>
-
           <RadioGroup label="Transmisión" name="transmision" watch={watch} register={register} rules={req} error={errors.transmision}
             options={[{ value: 'automatica', label: 'Automática' }, { value: 'manual', label: 'Manual' }]} />
-
           <RadioGroup label="Número de dueños" name="duenos" watch={watch} register={register} rules={req} error={errors.duenos}
             options={[{ value: '1', label: '1 dueño' }, { value: '2', label: '2 dueños' }, { value: '3mas', label: '3 o más' }]} />
-
           <RadioGroup label="Historial de accidentes" name="accidente" watch={watch} register={register} rules={req} error={errors.accidente}
             options={[{ value: 'ninguno', label: 'Sin accidentes' }, { value: 'menor', label: 'Accidente menor' }, { value: 'mayor', label: 'Accidente mayor' }]} />
-
           <RadioGroup label="Servicio al corriente" name="servicio" watch={watch} register={register} rules={req} error={errors.servicio}
             options={[{ value: 'si', label: 'Sí' }, { value: 'no', label: 'No' }]} />
-
           <RadioGroup label="Factura original" name="factura" watch={watch} register={register} rules={req} error={errors.factura}
             options={[{ value: 'si', label: 'Sí, tengo factura' }, { value: 'no', label: 'No tengo factura' }]} />
         </div>
 
-        <button type="submit"
-          className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl text-sm font-semibold tracking-wide transition-all hover:shadow-lg hover:shadow-red-600/20">
-          Ver estimación de precio
-          <ArrowRightIcon className="w-4 h-4" />
+        <button type="submit" disabled={loading}
+          className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white py-4 rounded-xl text-sm font-semibold tracking-wide transition-all hover:shadow-lg hover:shadow-red-600/20">
+          {loading ? (
+            <>
+              <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+              </svg>
+              Consultando precios de mercado...
+            </>
+          ) : (
+            <>Ver estimación de precio<ArrowRightIcon className="w-4 h-4" /></>
+          )}
         </button>
       </form>
     </section>
@@ -267,11 +293,10 @@ export default function ValuaTuAuto() {
 }
 
 function Results({ result, formData, onBack }) {
-  const { marketLow, marketMid, marketHigh, offerLow, offerMid, offerHigh } = result
+  const { marketLow, marketMid, marketHigh, offerLow, offerMid, offerHigh, source } = result
 
   return (
     <section className="max-w-2xl mx-auto px-4 py-12">
-
       <button onClick={onBack} className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors mb-8 group">
         <ArrowLeftIcon className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
         Modificar datos
@@ -282,20 +307,32 @@ function Results({ result, formData, onBack }) {
           {formData.marca} {formData.modelo} · {formData.año} · {Number(formData.kilometraje).toLocaleString('es-MX')} km
         </p>
         <h2 className="font-heading text-3xl font-bold text-gray-900">Resultado de tu valoración</h2>
+
+        {/* Data source badge */}
+        <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+          <ChartBarIcon className="w-3.5 h-3.5" />
+          {source.type === 'ml'
+            ? `Basado en ${source.count} anuncios reales de Mercado Libre`
+            : 'Estimado por modelo de depreciación (sin datos ML suficientes)'}
+        </div>
       </div>
 
       {/* Market value */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-4">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Valor de mercado estimado</p>
         <p className="font-heading text-3xl font-bold text-gray-800 mb-1">{fmt(marketMid)}</p>
-        <p className="text-sm text-gray-400">Rango: <span className="font-semibold text-gray-600">{fmt(marketLow)}</span> — <span className="font-semibold text-gray-600">{fmt(marketHigh)}</span></p>
+        <p className="text-sm text-gray-400">
+          Rango: <span className="font-semibold text-gray-600">{fmt(marketLow)}</span> — <span className="font-semibold text-gray-600">{fmt(marketHigh)}</span>
+        </p>
       </div>
 
       {/* Buying offer */}
       <div className="bg-red-600 rounded-2xl p-6 mb-4 text-white">
         <p className="text-xs font-semibold text-red-200 uppercase tracking-wider mb-1">Oferta de compra AutoKlic</p>
         <p className="font-heading text-4xl font-bold mb-1">{fmt(offerMid)}</p>
-        <p className="text-sm text-red-200">Rango: <span className="font-semibold text-white">{fmt(offerLow)}</span> — <span className="font-semibold text-white">{fmt(offerHigh)}</span></p>
+        <p className="text-sm text-red-200">
+          Rango: <span className="font-semibold text-white">{fmt(offerLow)}</span> — <span className="font-semibold text-white">{fmt(offerHigh)}</span>
+        </p>
         <p className="text-xs text-red-200 mt-3">Oferta sujeta a inspección física del vehículo.</p>
       </div>
 
@@ -303,7 +340,7 @@ function Results({ result, formData, onBack }) {
       <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-5">
         <InformationCircleIcon className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
         <p className="text-xs text-amber-700 leading-relaxed">
-          Estas cifras son <strong>estimaciones aproximadas</strong> basadas en los datos declarados, condiciones del mercado y el kilometraje típico para el año del vehículo. El precio final se determina tras la <strong>inspección física</strong> del vehículo por un asesor de AutoKlic.
+          Estas cifras son <strong>estimaciones aproximadas</strong> basadas en {source.type === 'ml' ? 'anuncios activos en Mercado Libre' : 'modelos de depreciación'} y los datos declarados. El precio final se determina tras la <strong>inspección física</strong> del vehículo por un asesor de AutoKlic.
         </p>
       </div>
 
