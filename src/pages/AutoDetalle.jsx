@@ -1,7 +1,7 @@
 // src/pages/AutoDetalle.jsx
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeftIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon, ArrowRightIcon } from '@heroicons/react/24/outline'
 import { FaWhatsapp } from 'react-icons/fa';
 import { Carousel } from 'react-responsive-carousel';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
@@ -99,6 +99,7 @@ function Lightbox({ images, index, onClose }) {
 export default function AutoDetalle() {
   const { modelo } = useParams();
   const [auto, setAuto] = useState(null);
+  const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState(null) // null | index
 
@@ -108,8 +109,21 @@ export default function AutoDetalle() {
       .select('*')
       .eq('visible', true)
       .then(({ data }) => {
-        const found = (data ?? []).find(c => toSlug(c.modelo) === modelo);
+        const all = data ?? []
+        const found = all.find(c => toSlug(c.modelo) === modelo);
         setAuto(found ?? null);
+
+        if (found) {
+          const others = all.filter(c => c.id !== found.id)
+          const sameBrand = others.filter(c => c.marca === found.marca)
+          const priceRange = others.filter(c =>
+            c.marca !== found.marca &&
+            Math.abs(Number(c.precio) - Number(found.precio)) < Number(found.precio) * 0.3
+          )
+          const picks = [...sameBrand, ...priceRange].slice(0, 3)
+          setRelated(picks)
+        }
+
         setLoading(false);
       });
   }, [modelo]);
@@ -265,6 +279,51 @@ export default function AutoDetalle() {
           </div>
         </div>
       </div>
+
+      {/* Related cars */}
+      {related.length > 0 && (
+        <div className="mt-16">
+          <h2 className="font-heading text-2xl font-bold text-gray-900 mb-6">
+            También te puede interesar
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {related.map(car => (
+              <Link
+                key={car.id}
+                to={`/autos/${toSlug(car.modelo)}`}
+                className="group bg-white rounded-2xl border border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300"
+              >
+                <div className="relative aspect-[16/10] bg-gray-100 overflow-hidden">
+                  {car.imagenes?.[0] ? (
+                    <img
+                      src={car.imagenes[0]}
+                      alt={`${car.marca} ${car.modelo}`}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-300 text-sm">
+                      Sin imagen
+                    </div>
+                  )}
+                </div>
+                <div className="p-4">
+                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-0.5">{car.marca}</p>
+                  <h3 className="font-heading text-base font-bold text-gray-900 leading-snug">{car.modelo}</h3>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {car.año}{car.kilometraje ? ` · ${Number(car.kilometraje).toLocaleString('es-MX')} km` : ''}
+                  </p>
+                  <div className="flex items-center justify-between mt-3">
+                    <p className="font-heading text-lg font-bold text-red-600">{formatPrice(car.precio)}</p>
+                    <span className="flex items-center gap-1 text-xs font-semibold text-gray-400 group-hover:text-red-500 transition-colors">
+                      Ver más <ArrowRightIcon className="h-3.5 w-3.5" />
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Lightbox */}
       {lightbox !== null && (
