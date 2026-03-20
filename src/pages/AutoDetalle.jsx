@@ -1,8 +1,9 @@
 // src/pages/AutoDetalle.jsx
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeftIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon, ArrowRightIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon, ArrowRightIcon, LinkIcon } from '@heroicons/react/24/outline'
 import { FaWhatsapp } from 'react-icons/fa';
+import toast from 'react-hot-toast';
 import { Carousel } from 'react-responsive-carousel';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import { supabase } from '../lib/supabase';
@@ -179,8 +180,15 @@ export default function AutoDetalle() {
     { label: 'Infoentretenimiento', value: auto.infoentretenimiento },
   ].filter(item => item.value != null && item.value !== '');
 
-  const msg    = encodeURIComponent(`Hola, me interesa el *${auto.marca} ${auto.modelo} ${auto.año}* en *${formatPrice(auto.precio)}*. ¿Está disponible?`)
-  const waUrl  = `https://wa.me/522213411834?text=${msg}`
+  const msg       = encodeURIComponent(`Hola, me interesa el *${auto.marca} ${auto.modelo} ${auto.año}* en *${formatPrice(auto.precio)}*. ¿Está disponible?`)
+  const waUrl     = `https://wa.me/522213411834?text=${msg}`
+  const shareWaMsg = encodeURIComponent(`Mira este auto: ${auto.marca} ${auto.modelo} ${auto.año} — ${formatPrice(auto.precio)}\n${window.location.href}`)
+  const shareWaUrl = `https://wa.me/?text=${shareWaMsg}`
+
+  function copyLink() {
+    navigator.clipboard.writeText(window.location.href)
+    toast.success('Enlace copiado')
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -276,6 +284,29 @@ export default function AutoDetalle() {
               <FaWhatsapp className="h-5 w-5" />
               Me interesa este auto
             </a>
+          </div>
+
+          {/* Share */}
+          <div className="mt-4">
+            <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-2">Compartir</p>
+            <div className="flex gap-2">
+              <a
+                href={shareWaUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 hover:border-green-300 hover:bg-green-50 text-sm text-gray-600 hover:text-green-700 transition-all"
+              >
+                <FaWhatsapp className="h-4 w-4" />
+                WhatsApp
+              </a>
+              <button
+                onClick={copyLink}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-sm text-gray-600 transition-all"
+              >
+                <LinkIcon className="h-4 w-4" />
+                Copiar enlace
+              </button>
+            </div>
           </div>
         </div>
       </div>
