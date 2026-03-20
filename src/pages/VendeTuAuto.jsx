@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { supabase } from '../lib/supabase'
+import SEO from '../components/SEO'
 
 export default function VendeTuAuto() {
   const [folio, setFolio] = useState(null)
@@ -49,6 +50,11 @@ export default function VendeTuAuto() {
 
   return (
     <section className="max-w-2xl mx-auto px-4 py-12">
+      <SEO
+        title="Vende tu auto en Puebla — Oferta en 24 horas"
+        description="¿Quieres vender tu auto? AutoKlic te hace una oferta justa en menos de 24 horas. Sin trámites complicados, pago inmediato en Puebla, México."
+        url="/vende-tu-auto"
+      />
       <h1 className="text-3xl font-bold text-gray-900 mb-2">Vende tu Auto</h1>
       <p className="text-gray-500 mb-8">Completa el formulario y te contactamos con una oferta.</p>
 

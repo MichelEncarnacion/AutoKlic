@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import AOS from 'aos'
 import 'aos/dist/aos.css'
+import SEO from './components/SEO'
 
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
@@ -61,6 +62,11 @@ export default function App() {
     <Routes>
       <Route path="/" element={
         <HomeLayout>
+          <SEO
+            title="AutoKlic — Compra y vende autos en Puebla"
+            description="AutoKlic es tu agencia de autos seminuevos en Puebla, México. Encuentra vehículos verificados, valuación gratuita y vende tu auto rápido y seguro."
+            url="/"
+          />
           <Hero /><FeaturedCars /><Process /><ContactForm />
         </HomeLayout>
       } />

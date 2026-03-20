@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { Carousel } from 'react-responsive-carousel';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import { supabase } from '../lib/supabase';
+import SEO from '../components/SEO';
 
 function toSlug(str) {
   return str.toLowerCase().replace(/\s+/g, '-');
@@ -286,8 +287,18 @@ export default function AutoDetalle() {
     toast.success('Enlace copiado')
   }
 
+  const seoImage = imagenes[0] ?? undefined
+  const seoDesc  = `${auto.marca} ${auto.modelo} ${auto.año} — ${auto.kilometraje ? Number(auto.kilometraje).toLocaleString('es-MX') + ' km · ' : ''}${formatPrice(auto.precio)}. ${auto.descripcion?.slice(0, 100) ?? 'Vehículo seminuevo verificado en Puebla, México.'}`
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <SEO
+        title={`${auto.marca} ${auto.modelo} ${auto.año} en venta en Puebla`}
+        description={seoDesc}
+        image={seoImage}
+        url={`/autos/${modelo}`}
+        type="article"
+      />
 
       {/* Back link */}
       <Link

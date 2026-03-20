@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { AdjustmentsHorizontalIcon, XMarkIcon, ArrowRightIcon } from '@heroicons/react/24/outline'
 import { supabase } from '../lib/supabase'
+import SEO from '../components/SEO'
 
 function toSlug(str) {
   return str.toLowerCase().replace(/\s+/g, '-')
@@ -106,6 +107,11 @@ export default function Catalogo() {
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+      <SEO
+        title="Catálogo de autos usados en Puebla"
+        description="Explora nuestro inventario de autos seminuevos verificados en Puebla, México. Financiamiento disponible. Encuentra tu próximo auto con AutoKlic."
+        url="/catalogo"
+      />
 
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4 mb-8">

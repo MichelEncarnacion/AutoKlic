@@ -5,6 +5,7 @@ import {
   ArrowRightIcon, ArrowLeftIcon, InformationCircleIcon,
   CheckIcon, ChartBarIcon,
 } from '@heroicons/react/24/outline'
+import SEO from '../components/SEO'
 
 // 2025 Mexican market MSRP by brand (fallback if ML returns no results)
 const BRAND_BASE = {
@@ -177,6 +178,11 @@ export default function ValuaTuAuto() {
 
   return (
     <section className="max-w-2xl mx-auto px-4 py-12">
+      <SEO
+        title="¿Cuánto vale mi auto? — Valuación gratis en línea"
+        description="Descubre el precio real de tu auto en segundos. Valuación gratuita basada en precios del mercado mexicano. Sin registro, sin compromisos — AutoKlic Puebla."
+        url="/valua-tu-auto"
+      />
 
       <div className="text-center mb-10">
         <p className="flex items-center justify-center gap-2 text-red-500 text-xs font-semibold tracking-widest uppercase mb-3">
