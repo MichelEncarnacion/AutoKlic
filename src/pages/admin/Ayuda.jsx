@@ -162,6 +162,17 @@ function AdminGuide() {
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-5">Cambiar rol o restablecer contraseña</p>
         <Step number="1" text="En la tabla de usuarios, usa el selector de la columna Rol para cambiar el rol al instante." />
         <Step number="2" text='Haz clic en "Restablecer contraseña" para enviar un correo al usuario con un enlace de cambio.' />
+
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-5">Desactivar / Reactivar un usuario</p>
+        <Step number="1" text='Usa los tabs "Activos", "Inactivos" o "Todos" para filtrar la lista de usuarios.' />
+        <Step number="2" text='En la fila del usuario, haz clic en "Desactivar". El usuario quedará bloqueado de inmediato y no podrá iniciar sesión.' />
+        <Step number="3" text='La fila se mostrará en gris con el badge "Inactivo". Para revertirlo, haz clic en "Activar".' />
+        <Tip text="Desactivar es reversible. Úsalo cuando un colaborador sale temporalmente o necesitas suspender el acceso sin perder su historial." />
+
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-5">Eliminar un usuario permanentemente</p>
+        <Step number="1" text="Haz clic en el ícono de basura (🗑️) en la fila del usuario." />
+        <Step number="2" text='Confirma la acción en el modal. Esta operación es irreversible: se elimina la cuenta y se desvinculan sus leads asignados.' />
+        <Tip text="No puedes desactivar ni eliminar tu propia cuenta. Si necesitas hacerlo, pide a otro administrador que lo haga." />
       </Section>
     </div>
   )
