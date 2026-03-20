@@ -25,11 +25,20 @@ const STATUS_COLORS = {
 
 const EMPTY_FILTERS = { marca: '', transmision: '', minPrecio: '', maxPrecio: '', minAño: '', maxAño: '' }
 
+const SORT_OPTIONS = [
+  { value: 'newest',    label: 'Más recientes' },
+  { value: 'price_asc', label: 'Precio: menor a mayor' },
+  { value: 'price_desc',label: 'Precio: mayor a menor' },
+  { value: 'km_asc',    label: 'Menor kilometraje' },
+  { value: 'year_desc', label: 'Año: más nuevo' },
+]
+
 export default function Catalogo() {
   const [cars, setCars]       = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState(EMPTY_FILTERS)
   const [showFilters, setShowFilters] = useState(false)
+  const [sortBy, setSortBy]   = useState('newest')
 
   useEffect(() => {
     supabase
@@ -53,15 +62,27 @@ export default function Catalogo() {
     [cars]
   )
 
-  const filtered = useMemo(() => cars.filter(c => {
-    if (filters.marca       && c.marca       !== filters.marca)       return false
-    if (filters.transmision && c.transmision !== filters.transmision) return false
-    if (filters.minPrecio   && Number(c.precio) < Number(filters.minPrecio)) return false
-    if (filters.maxPrecio   && Number(c.precio) > Number(filters.maxPrecio)) return false
-    if (filters.minAño      && Number(c.año)    < Number(filters.minAño))    return false
-    if (filters.maxAño      && Number(c.año)    > Number(filters.maxAño))    return false
-    return true
-  }), [cars, filters])
+  const filtered = useMemo(() => {
+    const result = cars.filter(c => {
+      if (filters.marca       && c.marca       !== filters.marca)       return false
+      if (filters.transmision && c.transmision !== filters.transmision) return false
+      if (filters.minPrecio   && Number(c.precio) < Number(filters.minPrecio)) return false
+      if (filters.maxPrecio   && Number(c.precio) > Number(filters.maxPrecio)) return false
+      if (filters.minAño      && Number(c.año)    < Number(filters.minAño))    return false
+      if (filters.maxAño      && Number(c.año)    > Number(filters.maxAño))    return false
+      return true
+    })
+
+    return [...result].sort((a, b) => {
+      switch (sortBy) {
+        case 'price_asc':  return Number(a.precio) - Number(b.precio)
+        case 'price_desc': return Number(b.precio) - Number(a.precio)
+        case 'km_asc':     return (Number(a.kilometraje) || 0) - (Number(b.kilometraje) || 0)
+        case 'year_desc':  return Number(b.año) - Number(a.año)
+        default:           return new Date(b.created_at) - new Date(a.created_at)
+      }
+    })
+  }, [cars, filters, sortBy])
 
   const hasActiveFilters = Object.values(filters).some(Boolean)
 
@@ -87,26 +108,38 @@ export default function Catalogo() {
     <section className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
 
       {/* Header */}
-      <div className="flex items-end justify-between gap-4 mb-8">
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
         <div>
           <h1 className="font-heading text-3xl sm:text-4xl font-bold text-gray-900">
             Catálogo de Autos
           </h1>
           <p className="text-gray-400 text-sm mt-1">
-            {filtered.length} vehículo{filtered.length !== 1 ? 's' : ''} disponible{filtered.length !== 1 ? 's' : ''}
+            {filtered.length} vehículo{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}
           </p>
         </div>
-        {/* Mobile filter toggle */}
-        <button
-          onClick={() => setShowFilters(v => !v)}
-          className="flex lg:hidden items-center gap-2 border border-gray-200 hover:border-gray-300 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 transition-colors"
-        >
-          <AdjustmentsHorizontalIcon className="h-4 w-4" />
-          Filtros
-          {hasActiveFilters && (
-            <span className="w-2 h-2 rounded-full bg-red-500" />
-          )}
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Sort */}
+          <select
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value)}
+            className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-400 transition-all"
+          >
+            {SORT_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+          {/* Mobile filter toggle */}
+          <button
+            onClick={() => setShowFilters(v => !v)}
+            className="flex lg:hidden items-center gap-2 border border-gray-200 hover:border-gray-300 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 transition-colors"
+          >
+            <AdjustmentsHorizontalIcon className="h-4 w-4" />
+            Filtros
+            {hasActiveFilters && (
+              <span className="w-2 h-2 rounded-full bg-red-500" />
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
