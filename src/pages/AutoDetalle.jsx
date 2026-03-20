@@ -1,7 +1,7 @@
 // src/pages/AutoDetalle.jsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { FaWhatsapp } from 'react-icons/fa';
 import { Carousel } from 'react-responsive-carousel';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
@@ -31,10 +31,76 @@ const STATUS_COLORS = {
   sold: 'bg-gray-100 text-gray-500',
 };
 
+function Lightbox({ images, index, onClose }) {
+  const [current, setCurrent] = useState(index)
+
+  const prev = useCallback(() => setCurrent(i => (i - 1 + images.length) % images.length), [images.length])
+  const next = useCallback(() => setCurrent(i => (i + 1) % images.length), [images.length])
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'ArrowLeft')  prev()
+      if (e.key === 'ArrowRight') next()
+      if (e.key === 'Escape')     onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [prev, next, onClose])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+      onClick={onClose}
+    >
+      {/* Close */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 p-2 text-white/70 hover:text-white transition"
+      >
+        <XMarkIcon className="w-7 h-7" />
+      </button>
+
+      {/* Counter */}
+      <span className="absolute top-5 left-1/2 -translate-x-1/2 text-white/60 text-sm">
+        {current + 1} / {images.length}
+      </span>
+
+      {/* Prev */}
+      {images.length > 1 && (
+        <button
+          onClick={e => { e.stopPropagation(); prev() }}
+          className="absolute left-4 p-2 text-white/70 hover:text-white transition"
+        >
+          <ChevronLeftIcon className="w-8 h-8" />
+        </button>
+      )}
+
+      {/* Image */}
+      <img
+        src={images[current]}
+        alt={`Imagen ${current + 1}`}
+        className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
+        onClick={e => e.stopPropagation()}
+      />
+
+      {/* Next */}
+      {images.length > 1 && (
+        <button
+          onClick={e => { e.stopPropagation(); next() }}
+          className="absolute right-4 p-2 text-white/70 hover:text-white transition"
+        >
+          <ChevronRightIcon className="w-8 h-8" />
+        </button>
+      )}
+    </div>
+  )
+}
+
 export default function AutoDetalle() {
   const { modelo } = useParams();
   const [auto, setAuto] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [lightbox, setLightbox] = useState(null) // null | index
 
   useEffect(() => {
     supabase
@@ -99,6 +165,9 @@ export default function AutoDetalle() {
     { label: 'Infoentretenimiento', value: auto.infoentretenimiento },
   ].filter(item => item.value != null && item.value !== '');
 
+  const msg    = encodeURIComponent(`Hola, me interesa el *${auto.marca} ${auto.modelo} ${auto.año}* en *${formatPrice(auto.precio)}*. ¿Está disponible?`)
+  const waUrl  = `https://wa.me/522213411834?text=${msg}`
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
@@ -125,9 +194,10 @@ export default function AutoDetalle() {
               showStatus={false}
               swipeable
               emulateTouch
+              onClickItem={i => setLightbox(i)}
             >
               {imagenes.map((img, i) => (
-                <div key={i} className="aspect-[4/3] bg-gray-100">
+                <div key={i} className="aspect-[4/3] bg-gray-100 cursor-zoom-in">
                   <img
                     src={img}
                     alt={`${auto.marca} ${auto.modelo} ${i + 1}`}
@@ -140,6 +210,11 @@ export default function AutoDetalle() {
             <div className="aspect-[4/3] bg-gray-100 flex items-center justify-center text-gray-400">
               Sin imágenes disponibles
             </div>
+          )}
+          {imagenes.length > 0 && (
+            <p className="text-center text-xs text-gray-400 py-2">
+              Toca una foto para ampliarla
+            </p>
           )}
         </div>
 
@@ -177,27 +252,28 @@ export default function AutoDetalle() {
           )}
 
           {/* Action buttons */}
-          {(() => {
-            const msg = encodeURIComponent(
-              `Hola, me interesa el *${auto.marca} ${auto.modelo} ${auto.año}* en *${formatPrice(auto.precio)}*. ¿Está disponible?`
-            )
-            const waUrl = `https://wa.me/522213411834?text=${msg}`
-            return (
-              <div className="flex flex-col sm:flex-row gap-3">
-                <a
-                  href={waUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2.5 bg-[#25D366] hover:bg-[#1ebe5b] text-white px-6 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:shadow-lg hover:shadow-green-400/25"
-                >
-                  <FaWhatsapp className="h-5 w-5" />
-                  Me interesa este auto
-                </a>
-              </div>
-            )
-          })()}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 flex items-center justify-center gap-2.5 bg-[#25D366] hover:bg-[#1ebe5b] text-white px-6 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:shadow-lg hover:shadow-green-400/25"
+            >
+              <FaWhatsapp className="h-5 w-5" />
+              Me interesa este auto
+            </a>
+          </div>
         </div>
       </div>
+
+      {/* Lightbox */}
+      {lightbox !== null && (
+        <Lightbox
+          images={imagenes}
+          index={lightbox}
+          onClose={() => setLightbox(null)}
+        />
+      )}
     </div>
   );
 }
