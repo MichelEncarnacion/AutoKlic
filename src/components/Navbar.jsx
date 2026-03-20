@@ -19,6 +19,7 @@ export default function Navbar() {
     { name: 'Proceso', href: '#proceso' },
     { name: 'Contacto', href: '#contacto' },
     { name: 'Catálogo', to: '/catalogo' },
+    { name: 'Valúa tu Auto', to: '/valua-tu-auto' },
     { name: 'Vende tu Auto', to: '/vende-tu-auto' },
   ];
 

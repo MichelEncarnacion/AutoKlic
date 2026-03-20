@@ -13,6 +13,7 @@ import ContactForm from './components/ContactForm'
 import AutoDetalle from './pages/AutoDetalle'
 import Catalogo from './pages/Catalogo'
 import VendeTuAuto from './pages/VendeTuAuto'
+import ValuaTuAuto from './pages/ValuaTuAuto'
 import Login from './pages/Login'
 import ResetPassword from './pages/ResetPassword'
 import NotFound from './pages/NotFound'
@@ -66,6 +67,7 @@ export default function App() {
       <Route path="/autos/:modelo" element={<PublicLayout><AutoDetalle /></PublicLayout>} />
       <Route path="/catalogo" element={<PublicLayout><Catalogo /></PublicLayout>} />
       <Route path="/vende-tu-auto" element={<PublicLayout><VendeTuAuto /></PublicLayout>} />
+      <Route path="/valua-tu-auto" element={<PublicLayout><ValuaTuAuto /></PublicLayout>} />
 
       <Route path="/login" element={<Login />} />
       <Route path="/reset-password" element={<ResetPassword />} />
