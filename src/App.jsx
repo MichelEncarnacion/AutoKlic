@@ -27,6 +27,7 @@ import Ayuda from './pages/admin/Ayuda'
 import Perfil from './pages/admin/Perfil'
 
 import ProtectedRoute from './components/admin/ProtectedRoute'
+import WhatsAppButton from './components/WhatsAppButton'
 
 function HomeLayout({ children }) {
   return (
@@ -34,6 +35,7 @@ function HomeLayout({ children }) {
       <Navbar />
       <main className="pt-16">{children}</main>
       <Footer />
+      <WhatsAppButton />
     </>
   )
 }
@@ -44,6 +46,7 @@ function PublicLayout({ children }) {
       <Navbar />
       <main className="pt-16">{children}</main>
       <Footer />
+      <WhatsAppButton />
     </>
   )
 }
