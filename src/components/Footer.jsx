@@ -139,6 +139,7 @@ export default function Footer() {
               </li>
               <li>
                 <p className="text-white font-medium mb-1">Sucursal 2</p>
+                <p className="leading-relaxed mb-2">Blvd. del Niño Poblano 2356, Reserva Territorial Atlixcáyotl, Concepción Guadalupe, 72450 Puebla, Pue.</p>
                 <a
                   href="https://maps.app.goo.gl/JqJ6Zn2vp5tEfP1C7"
                   target="_blank"
