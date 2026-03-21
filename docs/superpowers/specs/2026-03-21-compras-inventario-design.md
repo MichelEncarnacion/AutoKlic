@@ -103,9 +103,12 @@ Pre-filled fields are shown as read-only text — not editable inputs. The user 
 
 ### Validation (client-side before submit)
 
+- `compra.marca` and `compra.modelo` must not be blank — toast.error "El auto no tiene marca/modelo registrado" if either is empty
 - `precio > 0` — toast.error if missing or invalid
 - `transmision` must be selected
 - `combustible` must be selected
+
+> **Known gap:** `motor`, `puertas`, `traccion`, `aire`, and `infoentretenimiento` are not collected in this modal and will be `null`/default in the created car. The user can fill them later from the Inventario page.
 
 ### On submit
 
@@ -127,19 +130,22 @@ const carPayload = {
 }
 const { data: newCar, error: carErr } = await supabase
   .from('cars').insert(carPayload).select().single()
-if (carErr) { toast.error('Error al crear auto en inventario'); return }
+if (carErr) { setSendingToInventario(false); toast.error('Error al crear auto en inventario'); return }
 
 // Step 2: UPDATE compras SET car_id
 const { error: linkErr } = await supabase
   .from('compras').update({ car_id: newCar.id }).eq('id', compra.id)
 if (linkErr) {
-  // Rollback: delete the orphaned car
+  // Rollback: delete the orphaned car (best-effort — if this also fails, the car
+  // will remain in inventory without a linked purchase; acceptable known risk)
   await supabase.from('cars').delete().eq('id', newCar.id)
+  setSendingToInventario(false)
   toast.error('Error al vincular con la compra'); return
 }
 
 // Step 3: Update local state
 setCompras(prev => prev.map(c => c.id === compra.id ? { ...c, car_id: newCar.id } : c))
+setSendingToInventario(false)
 toast.success('Auto agregado al inventario')
 setInventarioModal(null)
 ```
@@ -174,6 +180,12 @@ User fills precio, transmision, combustible (+ optional descripcion) → submit
 
 Row re-renders: car_id != null → shows "En inventario" badge, hides button
 ```
+
+---
+
+## Modal cancel behavior
+
+Clicking "Cancelar" or pressing outside the modal calls `setInventarioModal(null)` and resets `inventarioForm` to empty defaults. The modal is dismissible (unlike the precio_cierre modal in Leads.jsx).
 
 ---
 
