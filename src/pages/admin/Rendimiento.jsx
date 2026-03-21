@@ -146,7 +146,7 @@ export default function Rendimiento() {
     </div>
   )
 
-  const myKPIs = !isAdmin ? computeKPIs(leads, profile.id) : null
+  const myKPIs = !isAdmin ? computeKPIs(leads, profile?.id) : null
 
   const KPI_CARDS = !isAdmin ? [
     { label: 'Leads asignados',   value: myKPIs.asignados },
