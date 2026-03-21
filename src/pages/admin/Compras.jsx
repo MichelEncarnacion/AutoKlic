@@ -20,6 +20,12 @@ function costoTotal(compra, gastos) {
 
 const FORMA_PAGO_LABELS = { efectivo: 'Efectivo', transferencia: 'Transferencia', cheque: 'Cheque' }
 
+const DOC_FIELDS = {
+  doc_factura:      { label: 'Factura',      urlField: 'doc_factura_url',      pathSegment: 'factura'      },
+  doc_tenencia:     { label: 'Tenencia',     urlField: 'doc_tenencia_url',     pathSegment: 'tenencia'     },
+  doc_verificacion: { label: 'Verificación', urlField: 'doc_verificacion_url', pathSegment: 'verificacion' },
+}
+
 function emptyForm() {
   return {
     marca: '', modelo: '', año: '', color: '', kilometraje: '', vin: '',
@@ -51,6 +57,9 @@ export default function Compras() {
   const [inventarioModal, setInventarioModal]             = useState(null)   // compra object or null
   const [inventarioForm, setInventarioForm]               = useState({ precio: '', transmision: '', combustible: '', descripcion: '' })
   const [sendingToInventario, setSendingToInventario]     = useState(false)
+  const [docModal, setDocModal]         = useState(null)   // { compra, field } or null
+  const [docUploading, setDocUploading] = useState(false)
+  const [docDeleting, setDocDeleting]   = useState(false)
 
   async function fetchCompras() {
     setLoading(true)
@@ -85,11 +94,77 @@ export default function Compras() {
     setGastoForm(prev => ({ ...prev, [id]: { concepto: '', monto: '', fecha: '' } }))
   }
 
-  async function toggleDoc(compra, field) {
-    const newVal = !compra[field]
-    const { error: err } = await supabase.from('compras').update({ [field]: newVal }).eq('id', compra.id)
-    if (err) { toast.error('Error al actualizar documento'); return }
-    setCompras(prev => prev.map(c => c.id === compra.id ? { ...c, [field]: newVal } : c))
+  async function handleDocUpload(file) {
+    if (!docModal) return
+    const { compra, field } = docModal
+    const { urlField, pathSegment } = DOC_FIELDS[field]
+
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+    if (!allowed.includes(file.type)) {
+      toast.error('Tipo de archivo no permitido (JPG, PNG, WebP o PDF)'); return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('El archivo supera el límite de 5 MB'); return
+    }
+
+    setDocUploading(true)
+    const path = `${compra.id}/${pathSegment}/${Date.now()}-${file.name}`
+    const { error: uploadErr } = await supabase.storage
+      .from('compra-docs').upload(path, file, { upsert: false })
+    if (uploadErr) {
+      setDocUploading(false)
+      toast.error('Error al subir el archivo'); return
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from('compra-docs').getPublicUrl(path)
+
+    const { error: updateErr } = await supabase.from('compras')
+      .update({ [urlField]: publicUrl, [field]: true })
+      .eq('id', compra.id)
+    if (updateErr) {
+      await supabase.storage.from('compra-docs').remove([path])
+      setDocUploading(false)
+      toast.error('Error al guardar el documento'); return
+    }
+
+    setCompras(prev => prev.map(c =>
+      c.id === compra.id ? { ...c, [urlField]: publicUrl, [field]: true } : c
+    ))
+    setDocUploading(false)
+    toast.success('Documento subido')
+    setDocModal(null)
+  }
+
+  async function handleDocDelete() {
+    if (!docModal) return
+    const { compra, field } = docModal
+    const { urlField } = DOC_FIELDS[field]
+    const url = compra[urlField]
+
+    const path = url.split('/compra-docs/')[1]
+    if (!path) { toast.error('No se pudo determinar la ruta del archivo'); return }
+
+    setDocDeleting(true)
+    const { error: removeErr } = await supabase.storage.from('compra-docs').remove([path])
+    if (removeErr) {
+      setDocDeleting(false)
+      toast.error('Error al eliminar el archivo'); return
+    }
+
+    const { error: updateErr } = await supabase.from('compras')
+      .update({ [urlField]: null, [field]: false })
+      .eq('id', compra.id)
+    if (updateErr) {
+      setDocDeleting(false)
+      toast.error('Archivo eliminado pero no se pudo actualizar el registro'); return
+    }
+
+    setCompras(prev => prev.map(c =>
+      c.id === compra.id ? { ...c, [urlField]: null, [field]: false } : c
+    ))
+    setDocDeleting(false)
+    toast.success('Documento eliminado')
+    setDocModal(null)
   }
 
   async function handleSave() {
@@ -318,8 +393,8 @@ export default function Compras() {
                         ].map(({ field, label }) => (
                           <button
                             key={field}
-                            onClick={() => toggleDoc(c, field)}
-                            title={field.replace('doc_', '')}
+                            onClick={() => setDocModal({ compra: c, field })}
+                            title={DOC_FIELDS[field].label}
                             className={`text-xs px-1.5 py-0.5 rounded transition ${
                               c[field]
                                 ? 'bg-green-100 text-green-700'
@@ -727,6 +802,80 @@ export default function Compras() {
           </div>
         </div>
       )}
+
+      {/* ── Modal: Documento ─────────────────────────────────── */}
+      {docModal && (() => {
+        const { compra, field } = docModal
+        const { label, urlField } = DOC_FIELDS[field]
+        const existingUrl = compra[urlField]
+        const filename = existingUrl ? existingUrl.split('/').pop() : null
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+            onClick={() => setDocModal(null)}
+          >
+            <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4" onClick={e => e.stopPropagation()}>
+              <h3 className="text-base font-semibold text-gray-900 mb-4">
+                {existingUrl ? label : `Subir ${label}`}
+              </h3>
+
+              {existingUrl ? (
+                /* Mode B — view / delete */
+                <div className="space-y-4">
+                  <p className="text-sm text-gray-500 break-all">
+                    <span className="font-medium text-gray-700">{filename}</span>
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => window.open(existingUrl, '_blank')}
+                      className="flex-1 px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                    >
+                      Ver documento
+                    </button>
+                    <button
+                      onClick={handleDocDelete}
+                      disabled={docDeleting}
+                      className="flex-1 px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+                    >
+                      {docDeleting ? 'Eliminando…' : 'Eliminar'}
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => setDocModal(null)}
+                    className="w-full px-4 py-2 text-sm text-gray-500 hover:bg-gray-50 rounded-lg transition"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              ) : (
+                /* Mode A — upload */
+                <div className="space-y-4">
+                  <p className="text-xs text-gray-400">JPG, PNG, WebP o PDF — máx 5 MB</p>
+                  <label className={`block w-full border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-red-400 transition ${docUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,application/pdf"
+                      className="hidden"
+                      onChange={e => { if (e.target.files?.[0]) handleDocUpload(e.target.files[0]) }}
+                      disabled={docUploading}
+                    />
+                    <span className="text-sm text-gray-500">
+                      {docUploading ? 'Subiendo…' : 'Haz clic para seleccionar un archivo'}
+                    </span>
+                  </label>
+                  <button
+                    onClick={() => setDocModal(null)}
+                    className="w-full px-4 py-2 text-sm text-gray-500 hover:bg-gray-50 rounded-lg transition"
+                    disabled={docUploading}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
