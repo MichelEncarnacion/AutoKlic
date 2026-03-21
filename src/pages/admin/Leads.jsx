@@ -483,7 +483,10 @@ export default function Leads() {
                 Omitir
               </button>
               <button
-                onClick={() => commitClose(Math.max(0, Number(closePriceInput) || 0))}
+                onClick={() => {
+                  const val = closePriceInput.trim()
+                  commitClose(val === '' ? null : Math.max(0, Number(val) || 0))
+                }}
                 className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
               >
                 Guardar con precio
