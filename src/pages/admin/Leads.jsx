@@ -43,6 +43,9 @@ export default function Leads() {
   const [settingsDays, setSettingsDays] = useState(3)
   const [historyLead, setHistoryLead]   = useState(null) // { id, nombre }
   const [confirmDelete, setConfirmDelete] = useState(null) // lead id to delete
+  const [pendingClose, setPendingClose]       = useState(null)  // { id, newStatus, oldLabel, newLabel }
+  const [closePriceOpen, setClosePriceOpen]   = useState(false)
+  const [closePriceInput, setClosePriceInput] = useState('')
 
   const canEdit   = profile?.role === 'admin' || profile?.role === 'seller'
   const canDelete = profile?.role === 'admin'
@@ -72,6 +75,14 @@ export default function Leads() {
     const lead = leads.find(x => x.id === id)
     const oldLabel = STATUS_OPTIONS.find(s => s.value === lead?.status)?.label ?? lead?.status
     const newLabel = STATUS_OPTIONS.find(s => s.value === newStatus)?.label ?? newStatus
+
+    if (newStatus === 'closed') {
+      setPendingClose({ id, newStatus, oldLabel, newLabel })
+      setClosePriceInput('')
+      setClosePriceOpen(true)
+      return
+    }
+
     const now = new Date().toISOString()
     const { error } = await supabase
       .from('leads')
@@ -81,11 +92,8 @@ export default function Leads() {
     toast.success('Estado actualizado')
     setLeads(l => l.map(x => x.id === id ? { ...x, status: newStatus, last_activity_at: now } : x))
     const { error: evErr } = await supabase.from('lead_events').insert({
-      lead_id: id,
-      user_id: profile.id,
-      event_type: 'status_change',
-      old_value: oldLabel,
-      new_value: newLabel,
+      lead_id: id, user_id: profile.id, event_type: 'status_change',
+      old_value: oldLabel, new_value: newLabel,
     })
     if (evErr) toast('El cambio se guardó pero no pudo registrarse en el historial.', { icon: '⚠️' })
   }
@@ -132,6 +140,32 @@ export default function Leads() {
       new_value: notas,
     })
     if (evErr) toast('El cambio se guardó pero no pudo registrarse en el historial.', { icon: '⚠️' })
+  }
+
+  async function commitClose(precioCierre) {
+    const { id, newStatus, oldLabel, newLabel } = pendingClose
+    const now = new Date().toISOString()
+    // precio_cierre is always written — null means "no price recorded"
+    const updatePayload = {
+      status: newStatus,
+      last_activity_at: now,
+      precio_cierre: precioCierre,
+    }
+    const { error } = await supabase.from('leads').update(updatePayload).eq('id', id)
+    if (error) { toast.error('Error al actualizar'); return }
+    toast.success('Estado actualizado')
+    setLeads(l => l.map(x => x.id === id ? { ...x, ...updatePayload } : x))
+    const { error: evErr } = await supabase.from('lead_events').insert({
+      lead_id: id,
+      user_id: profile.id,
+      event_type: 'status_change',
+      old_value: oldLabel,
+      new_value: newLabel,
+    })
+    if (evErr) toast('El cambio se guardó pero no pudo registrarse en el historial.', { icon: '⚠️' })
+    setPendingClose(null)
+    setClosePriceOpen(false)
+    setClosePriceInput('')
   }
 
   async function deleteLead(id) {
@@ -419,6 +453,40 @@ export default function Leads() {
                 className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
               >
                 Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Closing price modal ─────────────────────────────── */}
+      {closePriceOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
+            <h3 className="text-base font-semibold text-gray-900 mb-1">Precio de cierre</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Registra el precio al que se cerró este lead (opcional).
+            </p>
+            <input
+              type="number"
+              min={0}
+              value={closePriceInput}
+              onChange={e => setClosePriceInput(e.target.value)}
+              placeholder="Precio de cierre (opcional)"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 mb-4"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => commitClose(null)}
+                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              >
+                Omitir
+              </button>
+              <button
+                onClick={() => commitClose(Math.max(0, Number(closePriceInput) || 0))}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+              >
+                Guardar con precio
               </button>
             </div>
           </div>
