@@ -1,10 +1,18 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import toast from 'react-hot-toast'
-import { format } from 'date-fns'
+import { format, parseISO, subDays } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
-import { TrashIcon, MagnifyingGlassIcon, XMarkIcon, UserCircleIcon } from '@heroicons/react/24/outline'
+import {
+  TrashIcon,
+  MagnifyingGlassIcon,
+  XMarkIcon,
+  UserCircleIcon,
+  ClockIcon,
+  Cog6ToothIcon,
+} from '@heroicons/react/24/outline'
+import LeadHistoryModal from '../../components/admin/LeadHistoryModal'
 
 const STATUS_OPTIONS = [
   { value: 'pending',    label: 'Nuevo' },
@@ -30,6 +38,11 @@ export default function Leads() {
   const [statusFilter, setStatusFilter] = useState('')
   const [assigneeFilter, setAssigneeFilter] = useState('')
 
+  const [threshold, setThreshold]       = useState(3)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsDays, setSettingsDays] = useState(3)
+  const [historyLead, setHistoryLead]   = useState(null) // { id, nombre }
+
   const canEdit   = profile?.role === 'admin' || profile?.role === 'seller'
   const canDelete = profile?.role === 'admin'
   const canAssign = profile?.role === 'admin'
@@ -38,36 +51,81 @@ export default function Leads() {
     Promise.all([
       supabase.from('leads').select('*').order('created_at', { ascending: false }),
       supabase.from('profiles').select('id, nombre, email, role').in('role', ['admin', 'seller']).order('nombre'),
-    ]).then(([{ data: l }, { data: s }]) => {
+      supabase.from('settings').select('value').eq('key', 'follow_up_days').single(),
+    ]).then(([{ data: l }, { data: s }, { data: setting }]) => {
       setLeads(l ?? [])
       setStaff(s ?? [])
+      const days = Number(setting?.value ?? 3)
+      setThreshold(days)
+      setSettingsDays(days)
       setLoading(false)
     })
   }, [])
 
-  async function updateStatus(id, status) {
-    const { error } = await supabase.from('leads').update({ status }).eq('id', id)
-    if (error) toast.error('Error al actualizar')
-    else {
-      toast.success('Estado actualizado')
-      setLeads(l => l.map(x => x.id === id ? { ...x, status } : x))
-    }
+  async function updateStatus(id, newStatus) {
+    const lead = leads.find(x => x.id === id)
+    const oldLabel = STATUS_OPTIONS.find(s => s.value === lead?.status)?.label ?? lead?.status
+    const newLabel = STATUS_OPTIONS.find(s => s.value === newStatus)?.label ?? newStatus
+    const now = new Date().toISOString()
+    const { error } = await supabase
+      .from('leads')
+      .update({ status: newStatus, last_activity_at: now })
+      .eq('id', id)
+    if (error) { toast.error('Error al actualizar'); return }
+    toast.success('Estado actualizado')
+    setLeads(l => l.map(x => x.id === id ? { ...x, status: newStatus, last_activity_at: now } : x))
+    const { error: evErr } = await supabase.from('lead_events').insert({
+      lead_id: id,
+      user_id: profile.id,
+      event_type: 'status_change',
+      old_value: oldLabel,
+      new_value: newLabel,
+    })
+    if (evErr) toast('El cambio se guardó pero no pudo registrarse en el historial.', { icon: '⚠️' })
   }
 
   async function updateAssignment(id, assigned_to) {
     const value = assigned_to === '' ? null : assigned_to
-    const { error } = await supabase.from('leads').update({ assigned_to: value }).eq('id', id)
-    if (error) toast.error('Error al asignar')
-    else {
-      toast.success(value ? 'Lead asignado' : 'Asignación removida')
-      setLeads(l => l.map(x => x.id === id ? { ...x, assigned_to: value } : x))
-    }
+    const lead = leads.find(x => x.id === id)
+    const oldName = lead?.assigned_to
+      ? (staffById[lead.assigned_to]?.nombre ?? 'Desconocido')
+      : 'Sin asignar'
+    const newName = value ? (staffById[value]?.nombre ?? 'Desconocido') : 'Sin asignar'
+    const now = new Date().toISOString()
+    const { error } = await supabase
+      .from('leads')
+      .update({ assigned_to: value, last_activity_at: now })
+      .eq('id', id)
+    if (error) { toast.error('Error al asignar'); return }
+    toast.success(value ? 'Lead asignado' : 'Asignación removida')
+    setLeads(l => l.map(x => x.id === id ? { ...x, assigned_to: value, last_activity_at: now } : x))
+    const { error: evErr } = await supabase.from('lead_events').insert({
+      lead_id: id,
+      user_id: profile.id,
+      event_type: 'assignment_change',
+      old_value: oldName,
+      new_value: newName,
+    })
+    if (evErr) toast('El cambio se guardó pero no pudo registrarse en el historial.', { icon: '⚠️' })
   }
 
   async function updateNotas(id, notas) {
-    const { error } = await supabase.from('leads').update({ notas }).eq('id', id)
-    if (error) toast.error('Error al guardar nota')
-    else toast.success('Nota guardada')
+    const now = new Date().toISOString()
+    const { error } = await supabase
+      .from('leads')
+      .update({ notas, last_activity_at: now })
+      .eq('id', id)
+    if (error) { toast.error('Error al guardar nota'); return }
+    toast.success('Nota guardada')
+    setLeads(l => l.map(x => x.id === id ? { ...x, notas, last_activity_at: now } : x))
+    const { error: evErr } = await supabase.from('lead_events').insert({
+      lead_id: id,
+      user_id: profile.id,
+      event_type: 'note_added',
+      old_value: null,
+      new_value: notas,
+    })
+    if (evErr) toast('El cambio se guardó pero no pudo registrarse en el historial.', { icon: '⚠️' })
   }
 
   async function deleteLead(id) {
