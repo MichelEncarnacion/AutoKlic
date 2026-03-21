@@ -27,6 +27,7 @@ import Reportes from './pages/admin/Reportes'
 import Usuarios from './pages/admin/Usuarios'
 import Ayuda from './pages/admin/Ayuda'
 import Perfil from './pages/admin/Perfil'
+import Rendimiento from './pages/admin/Rendimiento'
 
 import ProtectedRoute from './components/admin/ProtectedRoute'
 import WhatsAppButton from './components/WhatsAppButton'
@@ -86,6 +87,7 @@ export default function App() {
         <Route path="inventario" element={<Inventario />} />
         <Route path="leads" element={<Leads />} />
         <Route path="reportes" element={<Reportes />} />
+        <Route path="rendimiento" element={<Rendimiento />} />
         <Route path="usuarios" element={
           <ProtectedRoute requiredRole="admin"><Usuarios /></ProtectedRoute>
         } />

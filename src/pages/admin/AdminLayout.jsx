@@ -9,6 +9,7 @@ import {
   UserGroupIcon,
   DocumentChartBarIcon,
   ChartBarIcon,
+  ChartBarSquareIcon,
   ArrowRightOnRectangleIcon,
   QuestionMarkCircleIcon,
   Bars3Icon,
@@ -18,10 +19,12 @@ import {
 } from '@heroicons/react/24/outline'
 
 const navItems = [
-  { to: '/admin/dashboard',  label: 'Dashboard',  icon: Squares2X2Icon },
-  { to: '/admin/inventario', label: 'Inventario', icon: ArchiveBoxIcon },
-  { to: '/admin/leads',      label: 'Leads',       icon: UserGroupIcon },
-  { to: '/admin/reportes',   label: 'Reportes',    icon: ChartBarIcon },
+  { to: '/admin/dashboard',   label: 'Dashboard',   icon: Squares2X2Icon,      roles: null },
+  { to: '/admin/inventario',  label: 'Inventario',  icon: ArchiveBoxIcon,       roles: null },
+  { to: '/admin/leads',       label: 'Leads',       icon: UserGroupIcon,        roles: null },
+  { to: '/admin/reportes',    label: 'Reportes',    icon: ChartBarIcon,         roles: null },
+  { to: '/admin/rendimiento', label: 'Rendimiento', icon: ChartBarSquareIcon,   roles: ['admin', 'seller'] },
+  { to: '/admin/usuarios',    label: 'Usuarios',    icon: DocumentChartBarIcon, roles: ['admin'] },
 ]
 
 const linkClass = ({ isActive }) =>
@@ -71,23 +74,20 @@ export default function AdminLayout() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {navItems.map(({ to, label, icon: Icon }) => (
-          <NavLink key={to} to={to} className={linkClass} onClick={() => setOpen(false)}>
-            <Icon className="w-5 h-5 shrink-0" />
-            <span className="flex-1">{label}</span>
-            {to === '/admin/leads' && staleCount > 0 && (
-              <span className="ml-auto text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full font-semibold leading-none">
-                {staleCount}
-              </span>
-            )}
-          </NavLink>
-        ))}
-        {profile?.role === 'admin' && (
-          <NavLink to="/admin/usuarios" className={linkClass} onClick={() => setOpen(false)}>
-            <DocumentChartBarIcon className="w-5 h-5 shrink-0" />
-            Usuarios
-          </NavLink>
-        )}
+        {navItems
+          .filter(item => !item.roles || item.roles.includes(profile?.role))
+          .map(({ to, label, icon: Icon }) => (
+            <NavLink key={to} to={to} className={linkClass} onClick={() => setOpen(false)}>
+              <Icon className="w-5 h-5 shrink-0" />
+              <span className="flex-1">{label}</span>
+              {to === '/admin/leads' && staleCount > 0 && (
+                <span className="ml-auto text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full font-semibold leading-none">
+                  {staleCount}
+                </span>
+              )}
+            </NavLink>
+          ))
+        }
       </nav>
 
       {/* Bottom */}
