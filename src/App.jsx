@@ -28,6 +28,7 @@ import Usuarios from './pages/admin/Usuarios'
 import Ayuda from './pages/admin/Ayuda'
 import Perfil from './pages/admin/Perfil'
 import Rendimiento from './pages/admin/Rendimiento'
+import Compras from './pages/admin/Compras'
 
 import ProtectedRoute from './components/admin/ProtectedRoute'
 import WhatsAppButton from './components/WhatsAppButton'
@@ -88,6 +89,7 @@ export default function App() {
         <Route path="leads" element={<Leads />} />
         <Route path="reportes" element={<Reportes />} />
         <Route path="rendimiento" element={<Rendimiento />} />
+        <Route path="compras" element={<Compras />} />
         <Route path="usuarios" element={
           <ProtectedRoute requiredRole="admin"><Usuarios /></ProtectedRoute>
         } />

@@ -10,6 +10,7 @@ import {
   DocumentChartBarIcon,
   ChartBarIcon,
   ChartBarSquareIcon,
+  ShoppingCartIcon,
   ArrowRightOnRectangleIcon,
   QuestionMarkCircleIcon,
   Bars3Icon,
@@ -24,6 +25,7 @@ const navItems = [
   { to: '/admin/leads',       label: 'Leads',       icon: UserGroupIcon,        roles: null },
   { to: '/admin/reportes',    label: 'Reportes',    icon: ChartBarIcon,         roles: null },
   { to: '/admin/rendimiento', label: 'Rendimiento', icon: ChartBarSquareIcon,   roles: ['admin', 'seller'] },
+  { to: '/admin/compras',     label: 'Compras',     icon: ShoppingCartIcon,     roles: ['admin', 'seller'] },
   { to: '/admin/usuarios',    label: 'Usuarios',    icon: DocumentChartBarIcon, roles: ['admin'] },
 ]
 
