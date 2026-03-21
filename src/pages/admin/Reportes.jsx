@@ -4,6 +4,11 @@ import { es } from 'date-fns/locale'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { supabase } from '../../lib/supabase'
+import {
+  GRAY_50, GRAY_200, GRAY_800,
+  TABLE_STYLES,
+  addPDFHeader, addPDFFooters, buildPeriodString, makeStatusHook,
+} from '../../lib/pdfUtils'
 
 function formatPrice(p) {
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(p)
@@ -18,125 +23,6 @@ function downloadCSV(filename, headers, rows) {
   const a = document.createElement('a')
   a.href = url; a.download = filename; a.click()
   URL.revokeObjectURL(url)
-}
-
-// ─── PDF shared utilities ─────────────────────────────────────────────────────
-
-const BRAND_RED  = [220, 38, 38]   // red-600
-const HEADER_RED = [153, 27, 27]   // red-800 (table head)
-const GRAY_50    = [249, 250, 251]
-const GRAY_200   = [229, 231, 235]
-const GRAY_800   = [31, 41, 55]
-
-// Status badge fill colors [r, g, b] — keys must match STATUS_LABELS values
-const STATUS_FILL = {
-  Disponible:        [220, 252, 231],  // green-100
-  Vendido:           [243, 244, 246],  // gray-100
-  Reservado:         [254, 249, 195],  // yellow-100
-  Nuevo:             [219, 234, 254],  // blue-100
-  'En revisión':     [254, 243, 199],  // amber-100
-  'Oferta enviada':  [243, 232, 255],  // purple-100
-  Cerrado:           [243, 244, 246],  // gray-100
-}
-
-const TABLE_STYLES = {
-  headStyles: {
-    fillColor: HEADER_RED,
-    textColor: [255, 255, 255],
-    fontStyle: 'bold',
-    fontSize: 8,
-  },
-  alternateRowStyles: { fillColor: GRAY_50 },
-  bodyStyles: { fontSize: 8, textColor: GRAY_800 },
-  styles: {
-    cellPadding: 3,
-    lineColor: GRAY_200,
-    lineWidth: 0.1,
-  },
-}
-
-/**
- * Draws the branded header banner and returns the Y position where content starts.
- * Uses dynamic page width so it works for both portrait and landscape.
- */
-function addPDFHeader(doc, title, period = '') {
-  const w = doc.internal.pageSize.getWidth()
-
-  // Red banner
-  doc.setFillColor(...BRAND_RED)
-  doc.rect(0, 0, w, 26, 'F')
-
-  // Brand name
-  doc.setTextColor(255, 255, 255)
-  doc.setFontSize(16)
-  doc.setFont(undefined, 'bold')
-  doc.text('AutoKlic', 14, 11)
-
-  // Report title
-  doc.setFontSize(10)
-  doc.setFont(undefined, 'normal')
-  doc.text(title, 14, 20)
-
-  // Generated date — right-aligned in banner
-  doc.setFontSize(8)
-  doc.text(`Generado: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, w - 14, 20, { align: 'right' })
-
-  doc.setTextColor(0, 0, 0)
-
-  if (period) {
-    doc.setFontSize(9)
-    doc.setTextColor(100, 100, 100)
-    doc.text(`Período: ${period}`, 14, 34)
-    doc.setTextColor(0, 0, 0)
-    return 40
-  }
-  return 32
-}
-
-/**
- * Adds page-number footers to every page. Call AFTER all autoTable calls.
- * Uses dynamic page dimensions so it works for portrait and landscape.
- */
-function addPDFFooters(doc, reportTitle) {
-  const pageCount = doc.getNumberOfPages()
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i)
-    const w = doc.internal.pageSize.getWidth()
-    const h = doc.internal.pageSize.getHeight()
-    doc.setDrawColor(...GRAY_200)
-    doc.line(14, h - 12, w - 14, h - 12)
-    doc.setFontSize(8)
-    doc.setTextColor(150, 150, 150)
-    doc.text(reportTitle, 14, h - 7)
-    doc.text(`Página ${i} de ${pageCount}`, w - 14, h - 7, { align: 'right' })
-    doc.setTextColor(0, 0, 0)
-  }
-}
-
-/**
- * Returns a human-readable period string for the report header.
- */
-function buildPeriodString(from, to) {
-  if (!from && !to) return 'Todo el período'
-  if (from && to) return `${format(new Date(from), 'dd/MM/yyyy')} — ${format(new Date(to), 'dd/MM/yyyy')}`
-  if (from) return `Desde ${format(new Date(from), 'dd/MM/yyyy')}`
-  return `Hasta ${format(new Date(to), 'dd/MM/yyyy')}`
-}
-
-/**
- * Returns a jspdf-autotable didParseCell hook that colors cells in the status column.
- * @param {number} statusColIndex - 0-based column index of the status column
- */
-function makeStatusHook(statusColIndex) {
-  return (data) => {
-    if (data.section === 'body' && data.column.index === statusColIndex) {
-      const fill = STATUS_FILL[data.cell.raw]
-      if (fill) {
-        data.cell.styles.fillColor = fill
-        data.cell.styles.textColor = GRAY_800
-      }
-    }
-  }
 }
 
 const STATUS_LABELS = { available: 'Disponible', sold: 'Vendido', reserved: 'Reservado', pending: 'Nuevo', reviewing: 'En revisión', offer_made: 'Oferta enviada', closed: 'Cerrado' }
