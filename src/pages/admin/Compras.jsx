@@ -96,7 +96,9 @@ export default function Compras() {
 
   async function handleDocUpload(file) {
     if (!docModal) return
-    const { compra, field } = docModal
+    const { compraId, field } = docModal
+    const compra = compras.find(c => c.id === compraId)
+    if (!compra) return
     const { urlField, pathSegment } = DOC_FIELDS[field]
 
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
@@ -108,7 +110,8 @@ export default function Compras() {
     }
 
     setDocUploading(true)
-    const path = `${compra.id}/${pathSegment}/${Date.now()}-${file.name}`
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const path = `${compra.id}/${pathSegment}/${Date.now()}-${safeName}`
     const { error: uploadErr } = await supabase.storage
       .from('compra-docs').upload(path, file, { upsert: false })
     if (uploadErr) {
@@ -137,10 +140,13 @@ export default function Compras() {
 
   async function handleDocDelete() {
     if (!docModal) return
-    const { compra, field } = docModal
+    const { compraId, field } = docModal
+    const compra = compras.find(c => c.id === compraId)
+    if (!compra) return
     const { urlField } = DOC_FIELDS[field]
     const url = compra[urlField]
 
+    if (!url) { toast.error('No se pudo determinar la ruta del archivo'); return }
     const path = url.split('/compra-docs/')[1]
     if (!path) { toast.error('No se pudo determinar la ruta del archivo'); return }
 
@@ -393,7 +399,7 @@ export default function Compras() {
                         ].map(({ field, label }) => (
                           <button
                             key={field}
-                            onClick={() => setDocModal({ compra: c, field })}
+                            onClick={() => setDocModal({ compraId: c.id, field })}
                             title={DOC_FIELDS[field].label}
                             className={`text-xs px-1.5 py-0.5 rounded transition ${
                               c[field]
@@ -805,7 +811,9 @@ export default function Compras() {
 
       {/* ── Modal: Documento ─────────────────────────────────── */}
       {docModal && (() => {
-        const { compra, field } = docModal
+        const { compraId, field } = docModal
+        const compra = compras.find(c => c.id === compraId)
+        if (!compra) return null
         const { label, urlField } = DOC_FIELDS[field]
         const existingUrl = compra[urlField]
         const filename = existingUrl ? existingUrl.split('/').pop() : null
@@ -827,7 +835,7 @@ export default function Compras() {
                   </p>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => window.open(existingUrl, '_blank')}
+                      onClick={() => window.open(existingUrl, '_blank', 'noopener,noreferrer')}
                       className="flex-1 px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
                     >
                       Ver documento
