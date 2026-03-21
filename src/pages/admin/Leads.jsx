@@ -137,6 +137,31 @@ export default function Leads() {
 
   const staffById = useMemo(() => Object.fromEntries(staff.map(s => [s.id, s])), [staff])
 
+  const staleLeadIds = useMemo(() => {
+    const cutoff = subDays(new Date(), threshold)
+    return new Set(
+      leads
+        .filter(l => {
+          const lastActivity = parseISO(l.last_activity_at ?? l.created_at)
+          return lastActivity < cutoff
+        })
+        .map(l => l.id)
+    )
+  }, [leads, threshold])
+
+  async function saveThreshold(days) {
+    const { error } = await supabase
+      .from('settings')
+      .upsert(
+        { key: 'follow_up_days', value: String(days), updated_at: new Date().toISOString() },
+        { onConflict: 'key' }
+      )
+    if (error) { toast.error('Error al guardar configuración'); return }
+    setThreshold(days)
+    setSettingsOpen(false)
+    toast.success('Umbral actualizado')
+  }
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
     return leads.filter(l => {
@@ -159,7 +184,7 @@ export default function Leads() {
   const clearFilters = () => { setSearch(''); setStatusFilter(''); setAssigneeFilter('') }
   const hasFilters = search || statusFilter || assigneeFilter
 
-  const colSpan = canDelete ? 8 : 7
+  const colSpan = canDelete ? 9 : 8
 
   return (
     <div className="p-6">
@@ -171,6 +196,15 @@ export default function Leads() {
             {filtered.length} de {leads.length} lead{leads.length !== 1 ? 's' : ''}
           </p>
         </div>
+        {canDelete && (
+          <button
+            onClick={() => { setSettingsDays(threshold); setSettingsOpen(true) }}
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
+            title="Configurar recordatorios"
+          >
+            <Cog6ToothIcon className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -231,6 +265,7 @@ export default function Leads() {
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Estado</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Asignado a</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Fecha</th>
+                <th className="px-4 py-3" />
                 {canDelete && <th className="px-4 py-3" />}
               </tr>
             </thead>
@@ -239,10 +274,17 @@ export default function Leads() {
                 <React.Fragment key={lead.id}>
                   <tr
                     onClick={() => setExpanded(expanded === lead.id ? null : lead.id)}
-                    className="hover:bg-gray-50 cursor-pointer transition"
+                    className={`cursor-pointer transition ${staleLeadIds.has(lead.id) ? 'bg-amber-50 hover:bg-amber-100' : 'hover:bg-gray-50'}`}
                   >
                     <td className="px-4 py-3 font-mono text-xs text-gray-500">{lead.id.substring(0, 8).toUpperCase()}</td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{lead.nombre}</td>
+                    <td className="px-4 py-3">
+                      <span className="font-medium text-gray-900">{lead.nombre}</span>
+                      {staleLeadIds.has(lead.id) && (
+                        <span className="ml-2 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">
+                          Sin actividad
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-gray-600">{lead.marca} {lead.modelo} {lead.año}</td>
                     <td className="px-4 py-3 text-gray-500 text-xs">{lead.email}<br />{lead.telefono}</td>
                     <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
@@ -285,6 +327,15 @@ export default function Leads() {
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-400">
                       {format(new Date(lead.created_at), 'dd MMM yyyy', { locale: es })}
+                    </td>
+                    <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                      <button
+                        onClick={() => setHistoryLead({ id: lead.id, nombre: lead.nombre })}
+                        className="p-1.5 text-gray-300 hover:text-blue-500 transition"
+                        title="Ver historial"
+                      >
+                        <ClockIcon className="w-4 h-4" />
+                      </button>
                     </td>
                     {canDelete && (
                       <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
@@ -332,6 +383,49 @@ export default function Leads() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Settings modal */}
+      {settingsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+            <h2 className="text-base font-semibold text-gray-900 mb-4">Recordatorios de seguimiento</h2>
+            <label className="block text-sm text-gray-600 mb-2">
+              Días sin actividad para marcar un lead como pendiente
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={30}
+              value={settingsDays}
+              onChange={e => setSettingsDays(Number(e.target.value))}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 mb-4"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setSettingsOpen(false)}
+                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => saveThreshold(settingsDays)}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* History modal */}
+      {historyLead && (
+        <LeadHistoryModal
+          leadId={historyLead.id}
+          leadNombre={historyLead.nombre}
+          onClose={() => setHistoryLead(null)}
+        />
       )}
     </div>
   )
