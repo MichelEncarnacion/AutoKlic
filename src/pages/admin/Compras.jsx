@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import {
-  ChevronDownIcon, ChevronUpIcon, TrashIcon,
+  ChevronDownIcon, ChevronUpIcon, TrashIcon, ArrowRightIcon,
 } from '@heroicons/react/24/outline'
 
 function formatPrice(p) {
@@ -48,6 +48,9 @@ export default function Compras() {
   const [saving, setSaving]               = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [deleting, setDeleting]           = useState(false)
+  const [inventarioModal, setInventarioModal]             = useState(null)   // compra object or null
+  const [inventarioForm, setInventarioForm]               = useState({ precio: '', transmision: '', combustible: '', descripcion: '' })
+  const [sendingToInventario, setSendingToInventario]     = useState(false)
 
   async function fetchCompras() {
     setLoading(true)
@@ -149,6 +152,54 @@ export default function Compras() {
     setGastos(prev => ({ ...prev, [compraId]: [...(prev[compraId] ?? []), data] }))
     setGastoForm(prev => ({ ...prev, [compraId]: { concepto: '', monto: '', fecha: '' } }))
     toast.success('Gasto agregado')
+  }
+
+  async function handleSendToInventario() {
+    const compra = inventarioModal
+    if (!compra.marca?.trim() || !compra.modelo?.trim()) {
+      toast.error('El auto no tiene marca/modelo registrado'); return
+    }
+    if (!inventarioForm.precio || Number(inventarioForm.precio) <= 0) {
+      toast.error('Ingresa un precio de venta válido'); return
+    }
+    if (!inventarioForm.transmision) { toast.error('Selecciona la transmisión'); return }
+    if (!inventarioForm.combustible) { toast.error('Selecciona el combustible'); return }
+
+    setSendingToInventario(true)
+
+    const carPayload = {
+      marca:       compra.marca,
+      modelo:      compra.modelo,
+      año:         compra.año ? Number(compra.año) : null,
+      color:       compra.color || null,
+      kilometraje: compra.kilometraje ? Number(compra.kilometraje) : null,
+      precio:      Number(inventarioForm.precio),
+      transmision: inventarioForm.transmision,
+      combustible: inventarioForm.combustible,
+      descripcion: inventarioForm.descripcion || null,
+      status:      'available',
+      visible:     true,
+      imagenes:    [],
+    }
+
+    const { data: newCar, error: carErr } = await supabase.from('cars').insert(carPayload).select().single()
+    if (carErr) {
+      setSendingToInventario(false)
+      toast.error('Error al crear auto en inventario'); return
+    }
+
+    const { error: linkErr } = await supabase.from('compras').update({ car_id: newCar.id }).eq('id', compra.id)
+    if (linkErr) {
+      await supabase.from('cars').delete().eq('id', newCar.id)
+      setSendingToInventario(false)
+      toast.error('Error al vincular con la compra'); return
+    }
+
+    setCompras(prev => prev.map(c => c.id === compra.id ? { ...c, car_id: newCar.id } : c))
+    setSendingToInventario(false)
+    toast.success('Auto agregado al inventario')
+    setInventarioModal(null)
+    setInventarioForm({ precio: '', transmision: '', combustible: '', descripcion: '' })
   }
 
   const filtered = compras.filter(c => {
@@ -295,6 +346,19 @@ export default function Compras() {
                             ? <ChevronUpIcon className="w-4 h-4" />
                             : <ChevronDownIcon className="w-4 h-4" />}
                         </button>
+                        {c.car_id ? (
+                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full whitespace-nowrap">
+                            En inventario
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => { setInventarioModal(c); setInventarioForm({ precio: '', transmision: '', combustible: '', descripcion: '' }) }}
+                            className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                            title="Agregar a inventario"
+                          >
+                            <ArrowRightIcon className="w-4 h-4" />
+                          </button>
+                        )}
                         {isAdmin && (
                           <button
                             onClick={() => setConfirmDelete(c)}
@@ -563,6 +627,99 @@ export default function Compras() {
                 className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50"
               >
                 {deleting ? 'Eliminando…' : 'Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Agregar a inventario ──────────────────────── */}
+      {inventarioModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => { setInventarioModal(null); setInventarioForm({ precio: '', transmision: '', combustible: '', descripcion: '' }) }}
+        >
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
+            <h3 className="text-base font-semibold text-gray-900 mb-4">Agregar a inventario</h3>
+
+            {/* Pre-filled read-only info */}
+            <div className="bg-gray-50 rounded-lg p-3 mb-4 text-sm space-y-1">
+              <p>
+                <span className="text-gray-400">Auto: </span>
+                <span className="font-medium text-gray-800">
+                  {[inventarioModal.marca, inventarioModal.modelo, inventarioModal.año].filter(Boolean).join(' ') || '—'}
+                </span>
+              </p>
+              {inventarioModal.color && (
+                <p><span className="text-gray-400">Color: </span><span className="text-gray-700">{inventarioModal.color}</span></p>
+              )}
+              {inventarioModal.kilometraje != null && (
+                <p><span className="text-gray-400">Km: </span><span className="text-gray-700">{Number(inventarioModal.kilometraje).toLocaleString('es-MX')}</span></p>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Precio de venta *</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={inventarioForm.precio}
+                  onChange={e => setInventarioForm(f => ({ ...f, precio: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Transmisión *</label>
+                <select
+                  value={inventarioForm.transmision}
+                  onChange={e => setInventarioForm(f => ({ ...f, transmision: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="">— Seleccionar —</option>
+                  <option value="Manual">Manual</option>
+                  <option value="Automática">Automática</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Combustible *</label>
+                <select
+                  value={inventarioForm.combustible}
+                  onChange={e => setInventarioForm(f => ({ ...f, combustible: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="">— Seleccionar —</option>
+                  <option value="Gasolina">Gasolina</option>
+                  <option value="Diésel">Diésel</option>
+                  <option value="Híbrido">Híbrido</option>
+                  <option value="Eléctrico">Eléctrico</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Descripción</label>
+                <textarea
+                  rows={2}
+                  value={inventarioForm.descripcion}
+                  onChange={e => setInventarioForm(f => ({ ...f, descripcion: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end mt-4">
+              <button
+                onClick={() => { setInventarioModal(null); setInventarioForm({ precio: '', transmision: '', combustible: '', descripcion: '' }) }}
+                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSendToInventario}
+                disabled={sendingToInventario}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+              >
+                {sendingToInventario ? 'Enviando…' : 'Agregar al inventario'}
               </button>
             </div>
           </div>
