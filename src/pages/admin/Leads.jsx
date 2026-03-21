@@ -42,6 +42,7 @@ export default function Leads() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsDays, setSettingsDays] = useState(3)
   const [historyLead, setHistoryLead]   = useState(null) // { id, nombre }
+  const [confirmDelete, setConfirmDelete] = useState(null) // lead id to delete
 
   const canEdit   = profile?.role === 'admin' || profile?.role === 'seller'
   const canDelete = profile?.role === 'admin'
@@ -129,10 +130,10 @@ export default function Leads() {
   }
 
   async function deleteLead(id) {
-    if (!confirm('¿Eliminar este lead?')) return
     const { error } = await supabase.from('leads').delete().eq('id', id)
     if (error) toast.error('Error al eliminar')
     else { toast.success('Lead eliminado'); setLeads(l => l.filter(x => x.id !== id)) }
+    setConfirmDelete(null)
   }
 
   const staffById = useMemo(() => Object.fromEntries(staff.map(s => [s.id, s])), [staff])
@@ -339,7 +340,7 @@ export default function Leads() {
                     </td>
                     {canDelete && (
                       <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => deleteLead(lead.id)} className="p-1.5 text-gray-300 hover:text-red-500 transition">
+                        <button onClick={() => setConfirmDelete(lead.id)} className="p-1.5 text-gray-300 hover:text-red-500 transition">
                           <TrashIcon className="w-4 h-4" />
                         </button>
                       </td>
@@ -426,6 +427,37 @@ export default function Leads() {
           leadNombre={historyLead.nombre}
           onClose={() => setHistoryLead(null)}
         />
+      )}
+
+      {/* Delete confirmation modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <TrashIcon className="w-5 h-5 text-red-600" />
+              </div>
+              <h2 className="text-base font-semibold text-gray-900">Eliminar lead</h2>
+            </div>
+            <p className="text-sm text-gray-500 mb-5">
+              Esta acción es permanente y no se puede deshacer. ¿Confirmas que deseas eliminar este lead?
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => deleteLead(confirmDelete)}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
