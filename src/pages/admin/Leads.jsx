@@ -49,8 +49,13 @@ export default function Leads() {
   const canAssign = profile?.role === 'admin'
 
   useEffect(() => {
+    if (!profile) return
+    const leadsQuery = profile.role === 'admin'
+      ? supabase.from('leads').select('*').order('created_at', { ascending: false })
+      : supabase.from('leads').select('*').eq('assigned_to', profile.id).order('created_at', { ascending: false })
+
     Promise.all([
-      supabase.from('leads').select('*').order('created_at', { ascending: false }),
+      leadsQuery,
       supabase.from('profiles').select('id, nombre, email, role').in('role', ['admin', 'seller']).order('nombre'),
       supabase.from('settings').select('value').eq('key', 'follow_up_days').single(),
     ]).then(([{ data: l }, { data: s }, { data: setting }]) => {
@@ -61,7 +66,7 @@ export default function Leads() {
       setSettingsDays(days)
       setLoading(false)
     })
-  }, [])
+  }, [profile])
 
   async function updateStatus(id, newStatus) {
     const lead = leads.find(x => x.id === id)
