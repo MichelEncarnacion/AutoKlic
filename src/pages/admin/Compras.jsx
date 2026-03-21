@@ -156,6 +156,7 @@ export default function Compras() {
 
   async function handleSendToInventario() {
     const compra = inventarioModal
+    if (!compra) return
     if (!compra.marca?.trim() || !compra.modelo?.trim()) {
       toast.error('El auto no tiene marca/modelo registrado'); return
     }
@@ -190,7 +191,8 @@ export default function Compras() {
 
     const { error: linkErr } = await supabase.from('compras').update({ car_id: newCar.id }).eq('id', compra.id)
     if (linkErr) {
-      await supabase.from('cars').delete().eq('id', newCar.id)
+      const { error: cleanupErr } = await supabase.from('cars').delete().eq('id', newCar.id)
+      if (cleanupErr) toast.error('No se pudo limpiar el registro — contacta al administrador')
       setSendingToInventario(false)
       toast.error('Error al vincular con la compra'); return
     }
