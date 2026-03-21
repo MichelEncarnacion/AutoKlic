@@ -7,12 +7,12 @@ import logo from '../assets/logo.png';
 const socialLinks = [
   {
     icon: FaFacebookF,
-    href: 'https://www.facebook.com/people/Autoklic/100094759145145/',
+    href: 'https://www.facebook.com/profile.php?id=61578560186525',
     label: 'Facebook',
   },
   {
     icon: FaInstagram,
-    href: 'https://www.instagram.com/autoklicmx/?igshid=OGQ5ZDc2ODk2ZA%3D%3D',
+    href: 'https://www.instagram.com/autoklic_puebla?utm_source=qr&igsh=c3BlOHRrMDV4bGxy',
     label: 'Instagram',
   },
   {
@@ -122,19 +122,33 @@ export default function Footer() {
           {/* Map */}
           <div>
             <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-5">
-              Ubicación
+              Ubicaciones
             </h3>
-            <div className="rounded-xl overflow-hidden border border-white/8">
-              <iframe
-                title="Ubicación AutoKlic"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3762.7230618961496!2d-98.2339076!3d19.0494706!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85cfc7287a674523%3A0x6df6af1a4eb8820a!2sBlvrd%20Atlixco%202305%2C%20Belisario%20Dom%C3%ADnguez%2C%2072180%20Heroica%20Puebla%20de%20Zaragoza%2C%20Pue.%2C%20M%C3%A9xico!5e0!3m2!1ses-419!2smx!4v1721953928313!5m2!1ses-419!2smx"
-                width="100%"
-                height="160"
-                style={{ border: 0 }}
-                allowFullScreen=""
-                loading="lazy"
-              />
-            </div>
+            <ul className="space-y-4 text-sm text-gray-400">
+              <li>
+                <p className="text-white font-medium mb-1">Sucursal 1</p>
+                <p className="leading-relaxed mb-2">Blvd. Atlixco 2305, Belisario Domínguez, 72180 Puebla, Pue.</p>
+                <a
+                  href="https://www.google.com/maps?q=Blvd.+Atlixco+2305,+Belisario+Dom%C3%ADnguez,+72180+Puebla"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 transition-colors"
+                >
+                  Ver en mapa →
+                </a>
+              </li>
+              <li>
+                <p className="text-white font-medium mb-1">Sucursal 2</p>
+                <a
+                  href="https://maps.app.goo.gl/JqJ6Zn2vp5tEfP1C7"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 transition-colors"
+                >
+                  Ver en mapa →
+                </a>
+              </li>
+            </ul>
           </div>
         </div>
 
