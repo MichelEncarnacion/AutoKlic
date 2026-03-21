@@ -1,7 +1,9 @@
 // src/pages/admin/AdminLayout.jsx
-import { useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { supabase } from '../../lib/supabase'
+import { subDays } from 'date-fns'
 import {
   ArchiveBoxIcon,
   UserGroupIcon,
@@ -30,6 +32,26 @@ const linkClass = ({ isActive }) =>
 export default function AdminLayout() {
   const { profile, signOut } = useAuth()
   const [open, setOpen] = useState(false)
+  const [staleCount, setStaleCount] = useState(0)
+  const location = useLocation()
+
+  useEffect(() => {
+    async function fetchStaleCount() {
+      const { data: setting } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'follow_up_days')
+        .single()
+      const days = Number(setting?.value ?? 3)
+      const cutoff = subDays(new Date(), days).toISOString()
+      const { count } = await supabase
+        .from('leads')
+        .select('id', { count: 'exact', head: true })
+        .or(`last_activity_at.lt.${cutoff},and(last_activity_at.is.null,created_at.lt.${cutoff})`)
+      setStaleCount(count ?? 0)
+    }
+    fetchStaleCount()
+  }, [location.pathname])
 
   const SidebarContent = () => (
     <>
@@ -52,7 +74,12 @@ export default function AdminLayout() {
         {navItems.map(({ to, label, icon: Icon }) => (
           <NavLink key={to} to={to} className={linkClass} onClick={() => setOpen(false)}>
             <Icon className="w-5 h-5 shrink-0" />
-            {label}
+            <span className="flex-1">{label}</span>
+            {to === '/admin/leads' && staleCount > 0 && (
+              <span className="ml-auto text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full font-semibold leading-none">
+                {staleCount}
+              </span>
+            )}
           </NavLink>
         ))}
         {profile?.role === 'admin' && (
@@ -93,7 +120,7 @@ export default function AdminLayout() {
 
       {/* ── Desktop sidebar ─────────────────────────────── */}
       <aside className="hidden lg:flex lg:flex-col w-60 bg-white border-r border-gray-200 shrink-0">
-        <SidebarContent />
+        {SidebarContent()}
       </aside>
 
       {/* ── Mobile drawer backdrop ───────────────────────── */}
@@ -110,7 +137,7 @@ export default function AdminLayout() {
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <SidebarContent />
+        {SidebarContent()}
       </aside>
 
       {/* ── Main ────────────────────────────────────────── */}
