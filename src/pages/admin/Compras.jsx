@@ -215,7 +215,7 @@ export default function Compras() {
               <th className="px-4 py-3 text-right">Precio compra</th>
               <th className="px-4 py-3 text-right">Gastos extras</th>
               <th className="px-4 py-3 text-right">Costo total</th>
-              <th className="px-4 py-3">Pago</th>
+              <th className="px-4 py-3">Forma de pago</th>
               <th className="px-4 py-3">Documentos</th>
               <th className="px-4 py-3">Vendedor</th>
               <th className="px-4 py-3" />
