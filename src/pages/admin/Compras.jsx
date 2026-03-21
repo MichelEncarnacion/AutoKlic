@@ -54,7 +54,7 @@ export default function Compras() {
     setError(null)
     try {
       let query = supabase.from('compras').select('*').order('fecha_compra', { ascending: false })
-      if (!isAdmin) query = query.eq('created_by', profile.id)
+      if (!isAdmin) query = query.eq('created_by', profile?.id ?? '')
       const { data, error: err } = await query
       if (err) throw err
       setCompras(data ?? [])
@@ -173,7 +173,7 @@ export default function Compras() {
   if (error) return (
     <div className="p-6 text-center">
       <p className="text-sm text-red-600 mb-3">{error}</p>
-      <button onClick={fetchCompras} className="text-sm text-red-600 underline hover:no-underline">
+      <button onClick={() => { if (profile) fetchCompras() }} className="text-sm text-red-600 underline hover:no-underline">
         Reintentar
       </button>
     </div>
@@ -310,7 +310,7 @@ export default function Compras() {
 
                   {/* Expandable row */}
                   {isOpen && (
-                    <tr key={`${c.id}-expand`} className="bg-gray-50 border-b border-gray-100">
+                    <tr className="bg-gray-50 border-b border-gray-100">
                       <td colSpan={10} className="px-6 py-4">
                         {loadingGastos[c.id] ? (
                           <div className="animate-pulse space-y-2">
