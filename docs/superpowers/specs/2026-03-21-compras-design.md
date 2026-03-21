@@ -75,15 +75,66 @@ create table gastos_compra (
 ### RLS policies
 
 **`compras`:**
-- All authenticated users can `SELECT`. Row-level filtering is done in JavaScript:
-  - Admin: sees all rows.
-  - Seller: sees only rows where `created_by = auth.uid()`.
-- Admin and seller can `INSERT` (created_by set to their own id).
-- Admin can `UPDATE` and `DELETE`. Sellers can `UPDATE` their own rows (for doc toggles).
+
+```sql
+-- SELECT: admin sees all; seller sees only own purchases
+create policy "compras_select" on compras for select
+  using (
+    (select role from profiles where id = auth.uid()) = 'admin'
+    or created_by = auth.uid()
+  );
+
+-- INSERT: admin and seller (created_by enforced client-side to profile.id)
+create policy "compras_insert" on compras for insert
+  with check (
+    (select role from profiles where id = auth.uid()) in ('admin', 'seller')
+  );
+
+-- UPDATE: admin can update any; seller can update own (doc toggles)
+create policy "compras_update" on compras for update
+  using (
+    (select role from profiles where id = auth.uid()) = 'admin'
+    or created_by = auth.uid()
+  );
+
+-- DELETE: admin only
+create policy "compras_delete" on compras for delete
+  using (
+    (select role from profiles where id = auth.uid()) = 'admin'
+  );
+```
 
 **`gastos_compra`:**
-- All authenticated users can `SELECT`, `INSERT`.
-- Admin can `DELETE`. Sellers cannot delete expenses.
+
+```sql
+-- SELECT: admin sees all; seller sees only expenses of own purchases
+create policy "gastos_select" on gastos_compra for select
+  using (
+    (select role from profiles where id = auth.uid()) = 'admin'
+    or exists (
+      select 1 from compras
+      where compras.id = compra_id
+      and compras.created_by = auth.uid()
+    )
+  );
+
+-- INSERT: admin and seller (compra_id must belong to a purchase they can read)
+create policy "gastos_insert" on gastos_compra for insert
+  with check (
+    (select role from profiles where id = auth.uid()) = 'admin'
+    or exists (
+      select 1 from compras
+      where compras.id = compra_id
+      and compras.created_by = auth.uid()
+    )
+  );
+
+-- DELETE: admin only
+create policy "gastos_delete" on gastos_compra for delete
+  using (
+    (select role from profiles where id = auth.uid()) = 'admin'
+  );
+```
 
 ---
 
@@ -152,7 +203,7 @@ function costoTotal(compra, gastos) {
 
 Columns: Fecha, Auto (marca modelo año), Km, Precio compra, Gastos extras, Costo total, Forma de pago, Documentos, Vendedor, Acciones.
 
-- **Fecha**: formatted as `dd/MM/yyyy`
+- **Fecha**: formatted as `dd/MM/yyyy` using `format(parseISO(compra.fecha_compra), 'dd/MM/yyyy')` from `date-fns`
 - **Auto**: `${marca} ${modelo} ${año}` — falls back to `'—'` for missing fields
 - **Km**: formatted with `toLocaleString('es-MX')`
 - **Precio compra / Gastos extras / Costo total**: formatted as MXN currency
@@ -230,7 +281,7 @@ Compras mounts
 Click "Registrar compra"
   → modal opens
   → fill form → submit
-  → INSERT compras SET created_by = profile.id
+  → supabase.from('compras').insert({ ...form, created_by: profile.id })
   → prepend to local state, close modal
 
 Click row expand button
@@ -256,6 +307,7 @@ Click delete (admin only)
 
 ## Error Handling
 
+- `react-hot-toast` is already bootstrapped at the app root — no `<Toaster />` needed in this component.
 - Fetch fails on mount: show error message with "Reintentar" button.
 - INSERT/UPDATE/DELETE fails: `toast.error(...)`, modal stays open or badge reverts.
 - `precio_compra` must be > 0 and `fecha_compra` must be set; validate client-side before submitting.
