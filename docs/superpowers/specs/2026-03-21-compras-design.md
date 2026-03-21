@@ -84,10 +84,11 @@ create policy "compras_select" on compras for select
     or created_by = auth.uid()
   );
 
--- INSERT: admin and seller (created_by enforced client-side to profile.id)
+-- INSERT: admin and seller; created_by must equal the caller's own id
 create policy "compras_insert" on compras for insert
   with check (
     (select role from profiles where id = auth.uid()) in ('admin', 'seller')
+    and created_by = auth.uid()
   );
 
 -- UPDATE: admin can update any; seller can update own (doc toggles)
