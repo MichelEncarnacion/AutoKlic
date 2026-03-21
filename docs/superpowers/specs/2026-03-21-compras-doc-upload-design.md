@@ -144,6 +144,7 @@ The modal renders in one of two modes based on whether `compra[urlField]` is nul
 
 ```js
 async function handleDocUpload(file) {
+  if (!docModal) return
   const { compra, field } = docModal
   const { urlField, pathSegment } = DOC_FIELDS[field]
 
@@ -170,10 +171,12 @@ async function handleDocUpload(file) {
   const { data: { publicUrl } } = supabase.storage.from('compra-docs').getPublicUrl(path)
 
   const { error: updateErr } = await supabase.from('compras')
+
     .update({ [urlField]: publicUrl, [field]: true })
     .eq('id', compra.id)
   if (updateErr) {
-    // Rollback: delete the just-uploaded file
+    // Rollback: delete the just-uploaded file (best-effort — if this also fails,
+    // the orphaned file remains in storage silently; acceptable known gap)
     await supabase.storage.from('compra-docs').remove([path])
     setDocUploading(false)
     toast.error('Error al guardar el documento'); return
@@ -192,6 +195,7 @@ async function handleDocUpload(file) {
 
 ```js
 async function handleDocDelete() {
+  if (!docModal) return
   const { compra, field } = docModal
   const { urlField } = DOC_FIELDS[field]
   const url = compra[urlField]
