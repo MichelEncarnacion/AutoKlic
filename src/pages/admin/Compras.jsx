@@ -198,7 +198,7 @@ export default function Compras() {
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url; a.download = filename; a.click()
-        URL.revokeObjectURL(url)
+        setTimeout(() => URL.revokeObjectURL(url), 100)
       }
 
       const comprasHeaders = [
@@ -301,7 +301,11 @@ export default function Compras() {
       for (const c of filtered) {
         const lista = gastosByCompra[c.id]
         if (!lista?.length) continue
-        const startY = doc.lastAutoTable.finalY + 8
+        let startY = doc.lastAutoTable.finalY + 8
+        if (startY > doc.internal.pageSize.height - 20) {
+          doc.addPage()
+          startY = 20
+        }
         doc.setFontSize(9).setFont(undefined, 'bold').setTextColor(0)
         doc.text(`${[c.marca, c.modelo, c.año].filter(Boolean).join(' ')} — Gastos adicionales`, 14, startY)
         autoTable(doc, {
