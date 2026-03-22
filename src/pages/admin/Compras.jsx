@@ -1,11 +1,14 @@
 import { useState, useEffect, Fragment } from 'react'
 import { format, parseISO } from 'date-fns'
 import toast from 'react-hot-toast'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import {
   ChevronDownIcon, ChevronUpIcon, TrashIcon, ArrowRightIcon,
 } from '@heroicons/react/24/outline'
+import logo from '../../assets/logo.png'
 
 function formatPrice(p) {
   return new Intl.NumberFormat('es-MX', {
@@ -60,6 +63,7 @@ export default function Compras() {
   const [docModal, setDocModal]         = useState(null)   // { compra, field } or null
   const [docUploading, setDocUploading] = useState(false)
   const [docDeleting, setDocDeleting]   = useState(false)
+  const [exporting, setExporting]       = useState(false)
 
   async function fetchCompras() {
     setLoading(true)
@@ -171,6 +175,164 @@ export default function Compras() {
     setDocDeleting(false)
     toast.success('Documento eliminado')
     setDocModal(null)
+  }
+
+  async function handleExportCsv() {
+    setExporting(true)
+    try {
+      const ids = filtered.map(c => c.id)
+      const { data: gastosData, error: gastosErr } = await supabase
+        .from('gastos_compra').select('*').in('compra_id', ids)
+      if (gastosErr) { toast.error('Error al obtener gastos'); return }
+
+      const gastosByCompra = {}
+      for (const g of gastosData) {
+        if (!gastosByCompra[g.compra_id]) gastosByCompra[g.compra_id] = []
+        gastosByCompra[g.compra_id].push(g)
+      }
+
+      function downloadCsv(filename, headers, rows) {
+        const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`
+        const lines = [headers.map(esc).join(','), ...rows.map(r => r.map(esc).join(','))]
+        const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url; a.download = filename; a.click()
+        URL.revokeObjectURL(url)
+      }
+
+      const comprasHeaders = [
+        'Fecha','Marca','Modelo','Año','Color','KM','VIN',
+        'Precio compra','Gastos extras','Costo total',
+        'Forma de pago','Vendedor','Teléfono',
+        'Factura','Tenencia','Verificación','Notas',
+      ]
+      const comprasRows = filtered.map(c => {
+        const extras = (gastosByCompra[c.id] ?? []).reduce((s, g) => s + Number(g.monto), 0)
+        return [
+          c.fecha_compra, c.marca, c.modelo, c.año, c.color, c.kilometraje, c.vin,
+          c.precio_compra, extras, Number(c.precio_compra) + extras,
+          c.forma_pago, c.vendedor_nombre, c.vendedor_telefono,
+          c.doc_factura ? 'Sí' : 'No',
+          c.doc_tenencia ? 'Sí' : 'No',
+          c.doc_verificacion ? 'Sí' : 'No',
+          c.notas,
+        ]
+      })
+      downloadCsv('compras-autoklic.csv', comprasHeaders, comprasRows)
+
+      await new Promise(r => setTimeout(r, 200))
+
+      const compraMap = Object.fromEntries(filtered.map(c => [c.id, c]))
+      const gastosHeaders = ['Compra','Fecha','Concepto','Monto']
+      const gastosRows = gastosData.map(g => {
+        const c = compraMap[g.compra_id] ?? {}
+        return [[c.marca, c.modelo, c.año].filter(Boolean).join(' '), g.fecha, g.concepto, g.monto]
+      })
+      downloadCsv('gastos-autoklic.csv', gastosHeaders, gastosRows)
+
+      toast.success('CSV descargado')
+    } catch {
+      toast.error('Error al generar el CSV')
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  async function handleExportPdf() {
+    setExporting(true)
+    try {
+      const ids = filtered.map(c => c.id)
+      const { data: gastosData, error: gastosErr } = await supabase
+        .from('gastos_compra').select('*').in('compra_id', ids)
+      if (gastosErr) { toast.error('Error al obtener gastos'); return }
+
+      const gastosByCompra = {}
+      for (const g of gastosData) {
+        if (!gastosByCompra[g.compra_id]) gastosByCompra[g.compra_id] = []
+        gastosByCompra[g.compra_id].push(g)
+      }
+
+      const fmt = n => new Intl.NumberFormat('es-MX', {
+        style: 'currency', currency: 'MXN', maximumFractionDigits: 0,
+      }).format(n ?? 0)
+
+      const doc = new jsPDF({ orientation: 'landscape' })
+      const today = new Date().toLocaleDateString('es-MX')
+
+      // Logo (best-effort — skip if loading fails)
+      try {
+        const res = await fetch(logo)
+        const blob = await res.blob()
+        const dataUrl = await new Promise(r => {
+          const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob)
+        })
+        doc.addImage(dataUrl, 'PNG', 14, 8, 28, 10)
+      } catch {}
+
+      // Header
+      doc.setFontSize(14).setFont(undefined, 'bold')
+      doc.text('Reporte de Compras', 48, 14)
+      doc.setFontSize(9).setFont(undefined, 'normal').setTextColor(120)
+      doc.text(`Generado el ${today} · ${filtered.length} registros`, 48, 20)
+      doc.setTextColor(0)
+
+      // Main table
+      autoTable(doc, {
+        startY: 28,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [31, 41, 55], textColor: 255, fontSize: 9 },
+        head: [['Fecha','Marca','Modelo','Año','KM','Precio compra','Gastos extras','Costo total','Forma de pago','Vendedor','F','T','V']],
+        body: filtered.map(c => {
+          const extras = (gastosByCompra[c.id] ?? []).reduce((s, g) => s + Number(g.monto), 0)
+          return [
+            c.fecha_compra, c.marca, c.modelo, c.año,
+            c.kilometraje != null ? Number(c.kilometraje).toLocaleString('es-MX') : '',
+            fmt(c.precio_compra), fmt(extras), fmt(Number(c.precio_compra) + extras),
+            c.forma_pago, c.vendedor_nombre,
+            c.doc_factura ? '✓' : '✗',
+            c.doc_tenencia ? '✓' : '✗',
+            c.doc_verificacion ? '✓' : '✗',
+          ]
+        }),
+      })
+
+      // Gastos detail sub-tables
+      for (const c of filtered) {
+        const lista = gastosByCompra[c.id]
+        if (!lista?.length) continue
+        const startY = doc.lastAutoTable.finalY + 8
+        doc.setFontSize(9).setFont(undefined, 'bold').setTextColor(0)
+        doc.text(`${[c.marca, c.modelo, c.año].filter(Boolean).join(' ')} — Gastos adicionales`, 14, startY)
+        autoTable(doc, {
+          startY: startY + 4,
+          styles: { fontSize: 8 },
+          headStyles: { fillColor: [75, 85, 99], textColor: 255 },
+          head: [['Fecha','Concepto','Monto']],
+          body: lista.map(g => [g.fecha, g.concepto, fmt(g.monto)]),
+        })
+      }
+
+      // Page numbers
+      const total = doc.internal.getNumberOfPages()
+      for (let i = 1; i <= total; i++) {
+        doc.setPage(i)
+        doc.setFontSize(8).setFont(undefined, 'normal').setTextColor(150)
+        doc.text(
+          `Página ${i} de ${total}`,
+          doc.internal.pageSize.width - 14,
+          doc.internal.pageSize.height - 8,
+          { align: 'right' },
+        )
+      }
+
+      doc.save('compras-autoklic.pdf')
+      toast.success('PDF descargado')
+    } catch {
+      toast.error('Error al generar el PDF')
+    } finally {
+      setExporting(false)
+    }
   }
 
   async function handleSave() {
@@ -329,6 +491,20 @@ export default function Compras() {
             onChange={e => setSearch(e.target.value)}
             className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-red-500"
           />
+          <button
+            onClick={handleExportCsv}
+            disabled={exporting || filtered.length === 0}
+            className="px-3 py-1.5 text-sm border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition disabled:opacity-40"
+          >
+            {exporting ? '…' : '↓ CSV'}
+          </button>
+          <button
+            onClick={handleExportPdf}
+            disabled={exporting || filtered.length === 0}
+            className="px-3 py-1.5 text-sm border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition disabled:opacity-40"
+          >
+            {exporting ? '…' : '↓ PDF'}
+          </button>
           <button
             onClick={() => { setForm(emptyForm()); setModalOpen(true) }}
             className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
