@@ -56,8 +56,9 @@ export default function App() {
   }, [])
 
   return (
-    <Routes>
+    <>
       <ScrollToTop />
+      <Routes>
       <Route path="/" element={
         <PublicLayout>
           <SEO
@@ -94,6 +95,7 @@ export default function App() {
       </Route>
 
       <Route path="*" element={<NotFound />} />
-    </Routes>
+      </Routes>
+    </>
   )
 }
