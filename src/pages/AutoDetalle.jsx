@@ -1,37 +1,61 @@
 // src/pages/AutoDetalle.jsx
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef, Fragment } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeftIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon, ArrowRightIcon, LinkIcon, CalculatorIcon } from '@heroicons/react/24/outline'
 import { FaWhatsapp } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import { Carousel } from 'react-responsive-carousel';
-import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import { supabase } from '../lib/supabase';
 import SEO from '../components/SEO';
+import { formatPrice, toSlug } from '../lib/utils';
+import { CAR_STATUS_LABELS as STATUS_LABELS, CAR_STATUS_COLORS as STATUS_COLORS } from '../lib/constants';
 
-function toSlug(str) {
-  return str.toLowerCase().replace(/\s+/g, '-');
+function DarkGallery({ imagenes, onImageClick }) {
+  const [current, setCurrent] = useState(0)
+
+  if (imagenes.length === 0) {
+    return (
+      <div className="bg-[#0f172a] aspect-[4/3] flex items-center justify-center text-gray-500 text-sm">
+        Sin imágenes disponibles
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-[#0f172a]">
+      {/* Main image */}
+      <div className="relative cursor-zoom-in" onClick={() => onImageClick(current)}>
+        <img
+          src={imagenes[current]}
+          alt={`Foto ${current + 1}`}
+          loading="eager"
+          className="w-full aspect-[4/3] object-cover"
+        />
+        <span className="absolute bottom-3 right-3 bg-black/60 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+          {current + 1} / {imagenes.length}
+        </span>
+        <span className="absolute bottom-3 left-3 bg-black/50 text-white/70 text-xs px-2.5 py-1 rounded-full">
+          Toca para ampliar
+        </span>
+      </div>
+      {/* Thumbnails */}
+      {imagenes.length > 1 && (
+        <div className="flex gap-1.5 p-2 overflow-x-auto">
+          {imagenes.map((img, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrent(i)}
+              className={`shrink-0 w-14 h-10 rounded overflow-hidden border-2 transition-all ${
+                i === current ? 'border-red-500 opacity-100' : 'border-transparent opacity-50 hover:opacity-75'
+              }`}
+            >
+              <img src={img} alt="" loading="lazy" className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
-
-function formatPrice(price) {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-    maximumFractionDigits: 0,
-  }).format(price);
-}
-
-const STATUS_LABELS = {
-  available: 'Disponible',
-  reserved: 'Reservado',
-  sold: 'Vendido',
-};
-
-const STATUS_COLORS = {
-  available: 'bg-green-100 text-green-700',
-  reserved: 'bg-yellow-100 text-yellow-700',
-  sold: 'bg-gray-100 text-gray-500',
-};
 
 function Lightbox({ images, index, onClose }) {
   const [current, setCurrent] = useState(index)
@@ -200,6 +224,7 @@ export default function AutoDetalle() {
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState(null) // null | index
+  const galleryRef = useRef(null)
 
   useEffect(() => {
     supabase
@@ -311,40 +336,9 @@ export default function AutoDetalle() {
 
       <div className="grid lg:grid-cols-2 gap-10 items-start">
 
-        {/* Carousel */}
-        <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-100">
-          {imagenes.length > 0 ? (
-            <Carousel
-              showArrows
-              showThumbs={imagenes.length > 1}
-              infiniteLoop
-              autoPlay={imagenes.length > 1}
-              interval={5000}
-              showStatus={false}
-              swipeable
-              emulateTouch
-              onClickItem={i => setLightbox(i)}
-            >
-              {imagenes.map((img, i) => (
-                <div key={i} className="aspect-[4/3] bg-gray-100 cursor-zoom-in">
-                  <img
-                    src={img}
-                    alt={`${auto.marca} ${auto.modelo} ${i + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ))}
-            </Carousel>
-          ) : (
-            <div className="aspect-[4/3] bg-gray-100 flex items-center justify-center text-gray-400">
-              Sin imágenes disponibles
-            </div>
-          )}
-          {imagenes.length > 0 && (
-            <p className="text-center text-xs text-gray-400 py-2">
-              Toca una foto para ampliarla
-            </p>
-          )}
+        {/* Gallery */}
+        <div ref={galleryRef}>
+          <DarkGallery imagenes={imagenes} onImageClick={setLightbox} />
         </div>
 
         {/* Info */}
@@ -439,6 +433,7 @@ export default function AutoDetalle() {
                     <img
                       src={car.imagenes[0]}
                       alt={`${car.marca} ${car.modelo}`}
+                      loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
