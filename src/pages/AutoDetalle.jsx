@@ -512,14 +512,18 @@ export default function AutoDetalle() {
           </div>
         )}
 
-        {/* Specs — temporary, will be redesigned in Task 5 */}
+        {/* Ficha técnica */}
         {fichaItems.length > 0 && (
-          <div className="px-4 sm:px-6 py-4 bg-white border-b border-gray-100">
-            <div className="grid grid-cols-2 gap-3">
+          <div className="px-4 sm:px-6 py-5 bg-white border-b-8 border-gray-100">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-1 h-5 bg-red-600 rounded-full shrink-0" aria-hidden="true" />
+              <h2 className="text-base font-bold text-gray-900">Ficha técnica</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-px bg-gray-100 rounded-xl overflow-hidden">
               {fichaItems.map(item => (
-                <div key={item.label} className="bg-gray-50 rounded-xl px-4 py-3">
-                  <p className="text-xs text-gray-400 font-medium mb-0.5">{item.label}</p>
-                  <p className="text-sm font-semibold text-gray-800">{item.value}</p>
+                <div key={item.label} className="bg-white px-4 py-3">
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-medium mb-1">{item.label}</p>
+                  <p className="text-sm font-bold text-gray-900">{item.value}</p>
                 </div>
               ))}
             </div>
