@@ -412,7 +412,8 @@ export default function AutoDetalle() {
 
   function copyLink() {
     navigator.clipboard.writeText(window.location.href)
-    toast.success('Enlace copiado')
+      .then(() => toast.success('Enlace copiado'))
+      .catch(() => toast.error('No se pudo copiar el enlace'))
   }
 
   const seoImage = imagenes[0] ?? undefined
@@ -503,7 +504,7 @@ export default function AutoDetalle() {
                   className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 hover:border-green-300 text-xs text-gray-500 hover:text-green-700 transition-all">
                   <FaWhatsapp className="h-3.5 w-3.5" aria-hidden="true" /> Compartir
                 </a>
-                <button onClick={copyLink}
+                <button type="button" onClick={copyLink}
                   className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 hover:border-gray-300 text-xs text-gray-500 transition-all">
                   <LinkIcon className="h-3.5 w-3.5" aria-hidden="true" /> Copiar
                 </button>
