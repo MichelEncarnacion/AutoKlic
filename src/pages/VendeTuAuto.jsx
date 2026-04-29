@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import SEO from '../components/SEO'
 
@@ -24,7 +25,7 @@ export default function VendeTuAuto() {
       }])
 
     if (error) {
-      alert('Ocurrió un error. Intenta de nuevo.')
+      toast.error('Ocurrió un error. Intenta de nuevo.')
       return
     }
     setFolio(id.substring(0, 8).toUpperCase())

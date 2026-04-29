@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import AOS from 'aos'
 import 'aos/dist/aos.css'
@@ -33,17 +33,6 @@ import Compras from './pages/admin/Compras'
 import ProtectedRoute from './components/admin/ProtectedRoute'
 import WhatsAppButton from './components/WhatsAppButton'
 
-function HomeLayout({ children }) {
-  return (
-    <>
-      <Navbar />
-      <main className="pt-16">{children}</main>
-      <Footer />
-      <WhatsAppButton />
-    </>
-  )
-}
-
 function PublicLayout({ children }) {
   return (
     <>
@@ -55,6 +44,12 @@ function PublicLayout({ children }) {
   )
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  return null
+}
+
 export default function App() {
   useEffect(() => {
     AOS.init({ duration: 800, once: true })
@@ -62,15 +57,16 @@ export default function App() {
 
   return (
     <Routes>
+      <ScrollToTop />
       <Route path="/" element={
-        <HomeLayout>
+        <PublicLayout>
           <SEO
             title="AutoKlic — Compra y vende autos en Puebla"
             description="AutoKlic es tu agencia de autos seminuevos en Puebla, México. Encuentra vehículos verificados, valuación gratuita y vende tu auto rápido y seguro."
             url="/"
           />
           <Hero /><FeaturedCars /><Process /><ContactForm />
-        </HomeLayout>
+        </PublicLayout>
       } />
       <Route path="/autos/:modelo" element={<PublicLayout><AutoDetalle /></PublicLayout>} />
       <Route path="/catalogo" element={<PublicLayout><Catalogo /></PublicLayout>} />

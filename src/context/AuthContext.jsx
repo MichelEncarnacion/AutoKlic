@@ -33,8 +33,8 @@ export function AuthProvider({ children }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
-      if (session?.user) loadProfile(session.user.id).catch(() => setLoading(false))
-      else setProfile(null)
+      if (session?.user) loadProfile(session.user.id).catch(() => {})
+      else { setProfile(null); setLoading(false) }
     })
 
     return () => subscription.unsubscribe()
@@ -42,7 +42,7 @@ export function AuthProvider({ children }) {
 
   async function signIn(email, password) {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (!error) navigate('/admin/inventario')
+    if (!error) navigate('/admin/dashboard')
     return { error }
   }
 
