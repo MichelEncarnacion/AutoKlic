@@ -129,9 +129,9 @@ The modal renders in one of two modes based on whether `compra[urlField]` is nul
 
 **Mode A — Upload (no file yet)**
 - Title: "Subir {label}"
-- File input: `accept="image/jpeg,image/png,image/webp,application/pdf"`
-- "Subir" button (disabled while uploading)
-- "Cancelar" button
+- Clickable drop-zone label wrapping a hidden `<input type="file">` with `accept="image/jpeg,image/png,image/webp,application/pdf"`; selecting a file immediately triggers `handleDocUpload` (no separate confirm button)
+- Drop-zone is disabled (`opacity-50 pointer-events-none`) while uploading; label text switches to "Subiendo…"
+- "Cancelar" button (disabled while uploading)
 
 **Mode B — View / Delete (file exists)**
 - Title: "{label}"
