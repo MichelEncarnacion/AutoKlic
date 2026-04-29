@@ -9,6 +9,28 @@ import SEO from '../components/SEO';
 import { formatPrice, toSlug } from '../lib/utils';
 import { CAR_STATUS_LABELS as STATUS_LABELS, CAR_STATUS_COLORS as STATUS_COLORS } from '../lib/constants';
 
+const EQUIPMENT_MAP = [
+  { field: 'aire',               emoji: '❄️',  label: 'Clima A/C' },
+  { field: 'infoentretenimiento', emoji: '📱', label: 'Pantalla táctil' },
+]
+
+function EquipmentPills({ auto }) {
+  const pills = EQUIPMENT_MAP.filter(item => Boolean(auto?.[item.field]))
+  if (pills.length === 0) return null
+  return (
+    <div className="flex flex-wrap gap-2 mt-3">
+      {pills.map(p => (
+        <span
+          key={p.field}
+          className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5"
+        >
+          <span aria-hidden="true">{p.emoji}</span> {p.label}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 function StickyHeader({ auto, waUrl, visible }) {
   return (
     <div
@@ -476,10 +498,17 @@ export default function AutoDetalle() {
           </div>
         </div>
 
-        {/* Description, specs, calculator sections — to be added in Tasks 4-6 */}
-        {auto.descripcion && (
-          <div className="px-4 sm:px-6 py-4 bg-white border-b border-gray-100">
-            <p className="text-sm text-gray-600 leading-relaxed">{auto.descripcion}</p>
+        {/* Description + equipment */}
+        {(auto.descripcion || auto.aire || auto.infoentretenimiento) && (
+          <div className="px-4 sm:px-6 py-5 bg-white border-b-8 border-gray-100">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-1 h-5 bg-red-600 rounded-full shrink-0" aria-hidden="true" />
+              <h2 className="text-base font-bold text-gray-900">Sobre este auto</h2>
+            </div>
+            {auto.descripcion && (
+              <p className="text-sm text-gray-600 leading-relaxed">{auto.descripcion}</p>
+            )}
+            <EquipmentPills auto={auto} />
           </div>
         )}
 
