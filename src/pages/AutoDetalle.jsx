@@ -73,8 +73,23 @@ function StickyHeader({ auto, waUrl, visible }) {
 
 function DarkGallery({ imagenes, onImageClick }) {
   const [current, setCurrent] = useState(0)
+  const touchStartX = useRef(null)
 
   useEffect(() => { setCurrent(0) }, [imagenes])
+
+  const prev = () => setCurrent(i => (i - 1 + imagenes.length) % imagenes.length)
+  const next = () => setCurrent(i => (i + 1) % imagenes.length)
+
+  function handleTouchStart(e) {
+    touchStartX.current = e.touches[0].clientX
+  }
+
+  function handleTouchEnd(e) {
+    if (touchStartX.current === null) return
+    const diff = touchStartX.current - e.changedTouches[0].clientX
+    if (Math.abs(diff) > 50) diff > 0 ? next() : prev()
+    touchStartX.current = null
+  }
 
   if (imagenes.length === 0) {
     return (
@@ -85,46 +100,50 @@ function DarkGallery({ imagenes, onImageClick }) {
   }
 
   return (
-    <div className="bg-[#0f172a]">
-      {/* Main image */}
-      <button
-        type="button"
-        aria-label="Ampliar imagen"
-        className="relative w-full cursor-zoom-in focus:outline-none"
-        onClick={() => onImageClick?.(current)}
-      >
-        <img
-          src={imagenes[current]}
-          alt={`Foto ${current + 1}`}
-          loading="eager"
-          className="w-full aspect-[4/3] object-cover"
-        />
-        <span className="absolute bottom-3 right-3 bg-black/60 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
-          {current + 1} / {imagenes.length}
-        </span>
-        <span className="absolute bottom-3 left-3 bg-black/50 text-white/70 text-xs px-2.5 py-1 rounded-full md:hidden">
-          Toca para ampliar
-        </span>
-      </button>
-      {/* Thumbnails */}
-      {imagenes.length > 1 && (
-        <div className="flex gap-1.5 p-2 overflow-x-auto">
-          {imagenes.map((img, i) => (
-            <button
-              key={img}
-              type="button"
-              aria-label={`Foto ${i + 1} de ${imagenes.length}`}
-              aria-pressed={i === current}
-              onClick={() => setCurrent(i)}
-              className={`shrink-0 w-14 h-10 rounded overflow-hidden border-2 transition-all ${
-                i === current ? 'border-red-500 opacity-100' : 'border-transparent opacity-50 hover:opacity-75'
-              }`}
-            >
-              <img src={img} alt="" loading="lazy" className="w-full h-full object-cover" />
-            </button>
-          ))}
-        </div>
-      )}
+    <div className="bg-[#0f172a] py-4 lg:py-6">
+      <div className="max-w-3xl mx-auto px-4 lg:px-6">
+        {/* Main image */}
+        <button
+          type="button"
+          aria-label="Ampliar imagen"
+          className="relative w-full cursor-zoom-in focus:outline-none rounded-xl overflow-hidden"
+          onClick={() => onImageClick?.(current)}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          <img
+            src={imagenes[current]}
+            alt={`Foto ${current + 1}`}
+            loading="eager"
+            className="w-full aspect-[4/3] object-cover"
+          />
+          <span className="absolute bottom-3 right-3 bg-black/60 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+            {current + 1} / {imagenes.length}
+          </span>
+          <span className="absolute bottom-3 left-3 bg-black/50 text-white/70 text-xs px-2.5 py-1 rounded-full md:hidden">
+            Toca para ampliar
+          </span>
+        </button>
+        {/* Thumbnails */}
+        {imagenes.length > 1 && (
+          <div className="flex gap-1.5 mt-2 overflow-x-auto">
+            {imagenes.map((img, i) => (
+              <button
+                key={img}
+                type="button"
+                aria-label={`Foto ${i + 1} de ${imagenes.length}`}
+                aria-pressed={i === current}
+                onClick={() => setCurrent(i)}
+                className={`shrink-0 w-14 h-10 rounded overflow-hidden border-2 transition-all ${
+                  i === current ? 'border-red-500 opacity-100' : 'border-transparent opacity-50 hover:opacity-75'
+                }`}
+              >
+                <img src={img} alt="" loading="lazy" className="w-full h-full object-cover" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
