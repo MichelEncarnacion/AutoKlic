@@ -1,7 +1,7 @@
 // src/pages/AutoDetalle.jsx
 import { useEffect, useState, useCallback, useMemo, useRef, Fragment } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeftIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon, ArrowRightIcon, LinkIcon, CalculatorIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon, ArrowRightIcon, LinkIcon } from '@heroicons/react/24/outline'
 import { FaWhatsapp } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
@@ -217,16 +217,16 @@ function FinancingCalculator({ precio }) {
   const fmt = n => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(n)
 
   return (
-    <div className="mt-8 bg-gray-50 rounded-2xl p-5 border border-gray-100">
-      <div className="flex items-center gap-2 mb-5">
-        <CalculatorIcon className="w-5 h-5 text-red-500" />
-        <h3 className="font-heading font-bold text-gray-900">Calculadora de financiamiento</h3>
+    <div className="px-4 sm:px-6 py-5 bg-white border-b-8 border-gray-100">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-1 h-5 bg-red-600 rounded-full shrink-0" aria-hidden="true" />
+        <h2 className="text-base font-bold text-gray-900">Calcula tu pago</h2>
       </div>
 
-      <div className="space-y-4">
-        {/* Enganche */}
+      <div className="space-y-5">
+        {/* Enganche slider */}
         <div>
-          <div className="flex justify-between mb-1">
+          <div className="flex justify-between mb-2">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Enganche</label>
             <span className="text-xs font-bold text-gray-700">{enganche}% — {fmt(engancheAmt)}</span>
           </div>
@@ -241,29 +241,31 @@ function FinancingCalculator({ precio }) {
           </div>
         </div>
 
-        {/* Plazo */}
+        {/* Plazo pills */}
         <div>
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Plazo</label>
           <div className="flex gap-2 flex-wrap">
             {[12, 24, 36, 48, 60].map(m => (
               <button
                 key={m}
+                type="button"
                 onClick={() => setMeses(m)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                aria-pressed={meses === m}
+                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition ${
                   meses === m
                     ? 'bg-red-600 text-white'
-                    : 'bg-white border border-gray-200 text-gray-600 hover:border-red-300'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                {m} meses
+                {m} m
               </button>
             ))}
           </div>
         </div>
 
-        {/* Tasa */}
+        {/* Tasa slider */}
         <div>
-          <div className="flex justify-between mb-1">
+          <div className="flex justify-between mb-2">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Tasa anual</label>
             <span className="text-xs font-bold text-gray-700">{tasa}%</span>
           </div>
@@ -279,15 +281,27 @@ function FinancingCalculator({ precio }) {
         </div>
       </div>
 
-      {/* Result */}
-      <div className="mt-5 bg-white rounded-xl p-4 border border-gray-100">
+      {/* Result card — dark */}
+      <div className="mt-5 bg-gradient-to-br from-gray-900 to-slate-800 rounded-2xl p-5 text-white">
         <p className="text-xs text-gray-400 mb-1">Pago mensual estimado</p>
-        <p className="font-heading text-3xl font-bold text-red-600">{fmt(mensualidad)}</p>
-        <div className="flex gap-4 mt-3 text-xs text-gray-500">
-          <span>Total: <strong className="text-gray-700">{fmt(total)}</strong></span>
-          <span>Interés: <strong className="text-gray-700">{fmt(interesTotal)}</strong></span>
+        <p className="text-4xl font-black text-white leading-tight">
+          {fmt(mensualidad)} <span className="text-lg font-normal text-gray-400">/mes</span>
+        </p>
+        <div className="flex gap-6 mt-3 flex-wrap">
+          <div>
+            <p className="text-xs text-gray-500">Total a pagar</p>
+            <p className="text-sm font-bold text-gray-200">{fmt(total)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Interés total</p>
+            <p className="text-sm font-bold text-gray-200">{fmt(interesTotal)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">Tasa anual</p>
+            <p className="text-sm font-bold text-gray-200">{tasa}%</p>
+          </div>
         </div>
-        <p className="text-xs text-gray-400 mt-3">* Cálculo estimado. Consulta condiciones reales con tu financiera.</p>
+        <p className="text-xs text-gray-600 mt-4">* Cálculo estimado. Consulta condiciones reales con tu financiera.</p>
       </div>
     </div>
   )
