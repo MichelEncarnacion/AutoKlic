@@ -130,10 +130,11 @@ function Lightbox({ images, index, onClose }) {
     >
       {/* Close */}
       <button
+        aria-label="Cerrar galería"
         onClick={onClose}
         className="absolute top-4 right-4 p-2 text-white/70 hover:text-white transition"
       >
-        <XMarkIcon className="w-7 h-7" />
+        <XMarkIcon className="w-7 h-7" aria-hidden="true" />
       </button>
 
       {/* Counter */}
@@ -144,10 +145,11 @@ function Lightbox({ images, index, onClose }) {
       {/* Prev */}
       {images.length > 1 && (
         <button
+          aria-label="Foto anterior"
           onClick={e => { e.stopPropagation(); prev() }}
           className="absolute left-4 p-2 text-white/70 hover:text-white transition"
         >
-          <ChevronLeftIcon className="w-8 h-8" />
+          <ChevronLeftIcon className="w-8 h-8" aria-hidden="true" />
         </button>
       )}
 
@@ -162,10 +164,11 @@ function Lightbox({ images, index, onClose }) {
       {/* Next */}
       {images.length > 1 && (
         <button
+          aria-label="Foto siguiente"
           onClick={e => { e.stopPropagation(); next() }}
           className="absolute right-4 p-2 text-white/70 hover:text-white transition"
         >
-          <ChevronRightIcon className="w-8 h-8" />
+          <ChevronRightIcon className="w-8 h-8" aria-hidden="true" />
         </button>
       )}
     </div>
@@ -495,7 +498,7 @@ export default function AutoDetalle() {
         )}
 
         {/* Calculator */}
-        <FinancingCalculator precio={Number(auto.precio)} />
+        {Number(auto.precio) > 0 && <FinancingCalculator precio={Number(auto.precio)} />}
 
         {/* Related cars */}
         {related.length > 0 && (
