@@ -12,14 +12,18 @@ import { CAR_STATUS_LABELS as STATUS_LABELS, CAR_STATUS_COLORS as STATUS_COLORS 
 function StickyHeader({ auto, waUrl, visible }) {
   return (
     <div
-      className={`fixed top-16 left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-sm transition-all duration-300 ${
+      role="banner"
+      aria-label="Encabezado fijo del vehículo"
+      aria-hidden={!visible}
+      {...(!visible ? { inert: '' } : {})}
+      className={`fixed top-16 left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-sm transition-[transform,opacity] duration-300 ${
         visible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <Link to="/catalogo" className="text-xs text-gray-500 hover:text-gray-900 flex items-center gap-1 shrink-0 transition-colors">
-            <ArrowLeftIcon className="h-3.5 w-3.5" /> Catálogo
+            <ArrowLeftIcon className="h-3.5 w-3.5" aria-hidden="true" /> Catálogo
           </Link>
           <div className="w-px h-4 bg-gray-200 shrink-0" />
           <div className="min-w-0">
@@ -37,7 +41,7 @@ function StickyHeader({ auto, waUrl, visible }) {
             rel="noopener noreferrer"
             className="bg-[#25D366] hover:bg-[#1ebe5b] text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
           >
-            <FaWhatsapp className="h-3.5 w-3.5" /> WhatsApp
+            <FaWhatsapp className="h-3.5 w-3.5" aria-hidden="true" /> WhatsApp
           </a>
         </div>
       </div>
