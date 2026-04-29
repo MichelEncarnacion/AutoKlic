@@ -236,7 +236,8 @@ function FinancingCalculator({ precio }) {
   const fmt = n => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(n)
 
   return (
-    <div className="px-4 sm:px-6 py-5 bg-white border-b-8 border-gray-100">
+    <div className="bg-white border-b-8 border-gray-100">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5">
       <div className="flex items-center gap-3 mb-5">
         <div className="w-1 h-5 bg-red-600 rounded-full shrink-0" aria-hidden="true" />
         <h2 className="text-base font-bold text-gray-900">Calcula tu pago</h2>
@@ -322,6 +323,7 @@ function FinancingCalculator({ precio }) {
         </div>
         <p className="text-xs text-gray-600 mt-4">* Cálculo estimado. Consulta condiciones reales con tu financiera.</p>
       </div>
+    </div>
     </div>
   )
 }
@@ -450,13 +452,28 @@ export default function AutoDetalle() {
           type="article"
         />
 
+        {/* Breadcrumb */}
+        <div className="bg-white border-b border-gray-100">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-1.5 text-xs text-gray-400 overflow-hidden">
+            <Link to="/catalogo" className="hover:text-red-600 transition-colors flex items-center gap-1 shrink-0">
+              <ArrowLeftIcon className="h-3 w-3" aria-hidden="true" />
+              Catálogo
+            </Link>
+            <span className="text-gray-300" aria-hidden="true">/</span>
+            <span className="text-gray-400 shrink-0">{auto.marca}</span>
+            <span className="text-gray-300" aria-hidden="true">/</span>
+            <span className="text-gray-600 font-medium truncate">{auto.modelo} {auto.año}</span>
+          </div>
+        </div>
+
         {/* Gallery — ref para sticky header */}
         <div ref={galleryRef}>
           <DarkGallery imagenes={imagenes} onImageClick={setLightbox} />
         </div>
 
         {/* Quick facts band */}
-        <div className="bg-red-600 px-4 sm:px-6 py-3 flex justify-around items-center flex-wrap gap-y-2">
+        <div className="bg-red-600 py-3">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 flex justify-around items-center flex-wrap gap-y-2">
           {[
             { label: 'Año',         value: auto.año },
             { label: 'Kilómetros',  value: auto.kilometraje ? Number(auto.kilometraje).toLocaleString('es-MX') : '—' },
@@ -472,9 +489,11 @@ export default function AutoDetalle() {
             </Fragment>
           ))}
         </div>
+        </div>
 
         {/* Title + price + status */}
-        <div className="px-4 sm:px-6 pt-5 pb-4 bg-white border-b border-gray-100 flex justify-between items-start gap-4">
+        <div className="bg-white border-b border-gray-100">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-5 pb-4 flex justify-between items-start gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               {auto.estado && (
@@ -530,36 +549,41 @@ export default function AutoDetalle() {
               </div>
             </div>
           </div>
+          </div>
         </div>
 
         {/* Description + equipment */}
         {(auto.descripcion || auto.aire || auto.infoentretenimiento) && (
-          <div className="px-4 sm:px-6 py-5 bg-white border-b-8 border-gray-100">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-1 h-5 bg-red-600 rounded-full shrink-0" aria-hidden="true" />
-              <h2 className="text-base font-bold text-gray-900">Sobre este auto</h2>
+          <div className="bg-white border-b-8 border-gray-100">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-1 h-5 bg-red-600 rounded-full shrink-0" aria-hidden="true" />
+                <h2 className="text-base font-bold text-gray-900">Sobre este auto</h2>
+              </div>
+              {auto.descripcion && (
+                <p className="text-sm text-gray-600 leading-relaxed">{auto.descripcion}</p>
+              )}
+              <EquipmentPills auto={auto} />
             </div>
-            {auto.descripcion && (
-              <p className="text-sm text-gray-600 leading-relaxed">{auto.descripcion}</p>
-            )}
-            <EquipmentPills auto={auto} />
           </div>
         )}
 
         {/* Ficha técnica */}
         {fichaItems.length > 0 && (
-          <div className="px-4 sm:px-6 py-5 bg-white border-b-8 border-gray-100">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-1 h-5 bg-red-600 rounded-full shrink-0" aria-hidden="true" />
-              <h2 className="text-base font-bold text-gray-900">Ficha técnica</h2>
-            </div>
-            <div className="grid grid-cols-2 gap-px bg-gray-100 rounded-xl overflow-hidden">
-              {fichaItems.map(item => (
-                <div key={item.label} className="bg-white px-4 py-3">
-                  <p className="text-xs text-gray-400 uppercase tracking-wider font-medium mb-1">{item.label}</p>
-                  <p className="text-sm font-bold text-gray-900">{item.value}</p>
-                </div>
-              ))}
+          <div className="bg-white border-b-8 border-gray-100">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-1 h-5 bg-red-600 rounded-full shrink-0" aria-hidden="true" />
+                <h2 className="text-base font-bold text-gray-900">Ficha técnica</h2>
+              </div>
+              <div className="grid grid-cols-2 gap-px bg-gray-100 rounded-xl overflow-hidden">
+                {fichaItems.map(item => (
+                  <div key={item.label} className="bg-white px-4 py-3">
+                    <p className="text-xs text-gray-400 uppercase tracking-wider font-medium mb-1">{item.label}</p>
+                    <p className="text-sm font-bold text-gray-900">{item.value}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -569,7 +593,8 @@ export default function AutoDetalle() {
 
         {/* Related cars */}
         {related.length > 0 && (
-          <div className="px-4 sm:px-6 py-5 bg-white border-b-8 border-gray-100">
+          <div className="bg-white border-b-8 border-gray-100">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-1 h-5 bg-red-600 rounded-full shrink-0" aria-hidden="true" />
@@ -610,10 +635,12 @@ export default function AutoDetalle() {
               ))}
             </div>
           </div>
+          </div>
         )}
 
         {/* Share — mobile only (desktop share is in the title section) */}
-        <div className="px-4 sm:px-6 py-5 bg-white lg:hidden">
+        <div className="bg-white lg:hidden">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-5">
           <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-3">Compartir</p>
           <div className="flex gap-3">
             <a
@@ -632,6 +659,7 @@ export default function AutoDetalle() {
               <LinkIcon className="h-4 w-4" aria-hidden="true" /> Copiar enlace
             </button>
           </div>
+        </div>
         </div>
 
         {/* Lightbox */}
