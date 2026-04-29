@@ -9,6 +9,42 @@ import SEO from '../components/SEO';
 import { formatPrice, toSlug } from '../lib/utils';
 import { CAR_STATUS_LABELS as STATUS_LABELS, CAR_STATUS_COLORS as STATUS_COLORS } from '../lib/constants';
 
+function StickyHeader({ auto, waUrl, visible }) {
+  return (
+    <div
+      className={`fixed top-16 left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-sm transition-all duration-300 ${
+        visible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <Link to="/catalogo" className="text-xs text-gray-500 hover:text-gray-900 flex items-center gap-1 shrink-0 transition-colors">
+            <ArrowLeftIcon className="h-3.5 w-3.5" /> Catálogo
+          </Link>
+          <div className="w-px h-4 bg-gray-200 shrink-0" />
+          <div className="min-w-0">
+            <span className="text-sm font-bold text-gray-900 truncate">{auto.marca} {auto.modelo}</span>
+            <span className="text-xs text-gray-400 ml-2">
+              {auto.año}{auto.kilometraje ? ` · ${Number(auto.kilometraje).toLocaleString('es-MX')} km` : ''}
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="text-base font-bold text-red-600 hidden sm:block">{formatPrice(auto.precio)}</span>
+          <a
+            href={waUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-[#25D366] hover:bg-[#1ebe5b] text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+          >
+            <FaWhatsapp className="h-3.5 w-3.5" /> WhatsApp
+          </a>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function DarkGallery({ imagenes, onImageClick }) {
   const [current, setCurrent] = useState(0)
 
@@ -234,6 +270,7 @@ export default function AutoDetalle() {
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState(null) // null | index
+  const [stickyVisible, setStickyVisible] = useState(false)
   const galleryRef = useRef(null)
 
   useEffect(() => {
@@ -260,6 +297,17 @@ export default function AutoDetalle() {
         setLoading(false);
       });
   }, [modelo]);
+
+  useEffect(() => {
+    const el = galleryRef.current
+    if (!el || !auto) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setStickyVisible(!entry.isIntersecting),
+      { threshold: 0, rootMargin: '-64px 0px 0px 0px' }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [auto])
 
   if (loading) {
     return (
@@ -326,159 +374,156 @@ export default function AutoDetalle() {
   const seoDesc  = `${auto.marca} ${auto.modelo} ${auto.año} — ${auto.kilometraje ? Number(auto.kilometraje).toLocaleString('es-MX') + ' km · ' : ''}${formatPrice(auto.precio)}. ${auto.descripcion?.slice(0, 100) ?? 'Vehículo seminuevo verificado en Puebla, México.'}`
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-      <SEO
-        title={`${auto.marca} ${auto.modelo} ${auto.año} en venta en Puebla`}
-        description={seoDesc}
-        image={seoImage}
-        url={`/autos/${modelo}`}
-        type="article"
-      />
+    <>
+      <StickyHeader auto={auto} waUrl={waUrl} visible={stickyVisible} />
+      <div className="pb-20 lg:pb-0">
+        <SEO
+          title={`${auto.marca} ${auto.modelo} ${auto.año} en venta en Puebla`}
+          description={seoDesc}
+          image={seoImage}
+          url={`/autos/${modelo}`}
+          type="article"
+        />
 
-      {/* Back link */}
-      <Link
-        to="/#autos"
-        className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors mb-8 group"
-      >
-        <ArrowLeftIcon className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
-        Volver a vehículos
-      </Link>
-
-      <div className="grid lg:grid-cols-2 gap-10 items-start">
-
-        {/* Gallery */}
+        {/* Gallery — ref para sticky header */}
         <div ref={galleryRef}>
           <DarkGallery imagenes={imagenes} onImageClick={setLightbox} />
         </div>
 
-        {/* Info */}
-        <div>
-          {/* Status badge */}
-          {auto.estado && (
-            <span className={`inline-block text-xs font-semibold px-3 py-1 rounded-full mb-4 ${STATUS_COLORS[auto.estado] ?? 'bg-gray-100 text-gray-600'}`}>
-              {STATUS_LABELS[auto.estado] ?? auto.estado}
-            </span>
-          )}
+        {/* (rest of content follows in later tasks) */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          {/* Info — temporary, will be restructured in Tasks 3-7 */}
+          <div className="grid lg:grid-cols-2 gap-10 items-start mt-8">
+            {/* Info column */}
+            <div>
+              {/* Status badge */}
+              {auto.estado && (
+                <span className={`inline-block text-xs font-semibold px-3 py-1 rounded-full mb-4 ${STATUS_COLORS[auto.estado] ?? 'bg-gray-100 text-gray-600'}`}>
+                  {STATUS_LABELS[auto.estado] ?? auto.estado}
+                </span>
+              )}
 
-          <p className="text-sm text-gray-400 font-medium uppercase tracking-wider mb-1">{auto.marca}</p>
-          <h1 className="font-heading text-3xl sm:text-4xl font-bold text-gray-900 mb-2 leading-tight">
-            {auto.modelo}
-          </h1>
-          <p className="font-heading text-3xl font-bold text-red-600 mb-5">
-            {formatPrice(auto.precio)}
-          </p>
+              <p className="text-sm text-gray-400 font-medium uppercase tracking-wider mb-1">{auto.marca}</p>
+              <h1 className="font-heading text-3xl sm:text-4xl font-bold text-gray-900 mb-2 leading-tight">
+                {auto.modelo}
+              </h1>
+              <p className="font-heading text-3xl font-bold text-red-600 mb-5">
+                {formatPrice(auto.precio)}
+              </p>
 
-          {auto.descripcion && (
-            <p className="text-gray-600 text-sm leading-relaxed mb-6">{auto.descripcion}</p>
-          )}
+              {auto.descripcion && (
+                <p className="text-gray-600 text-sm leading-relaxed mb-6">{auto.descripcion}</p>
+              )}
 
-          {/* Specs grid */}
-          {fichaItems.length > 0 && (
-            <div className="grid grid-cols-2 gap-3 mb-8">
-              {fichaItems.map(item => (
-                <div key={item.label} className="bg-gray-50 rounded-xl px-4 py-3">
-                  <p className="text-xs text-gray-400 font-medium mb-0.5">{item.label}</p>
-                  <p className="text-sm font-semibold text-gray-800">{item.value}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Action buttons */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <a
-              href={waUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-2.5 bg-[#25D366] hover:bg-[#1ebe5b] text-white px-6 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:shadow-lg hover:shadow-green-400/25"
-            >
-              <FaWhatsapp className="h-5 w-5" />
-              Me interesa este auto
-            </a>
-          </div>
-
-          {/* Financing calculator */}
-          <FinancingCalculator precio={Number(auto.precio)} />
-
-          {/* Share */}
-          <div className="mt-4">
-            <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-2">Compartir</p>
-            <div className="flex gap-2">
-              <a
-                href={shareWaUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 hover:border-green-300 hover:bg-green-50 text-sm text-gray-600 hover:text-green-700 transition-all"
-              >
-                <FaWhatsapp className="h-4 w-4" />
-                WhatsApp
-              </a>
-              <button
-                onClick={copyLink}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-sm text-gray-600 transition-all"
-              >
-                <LinkIcon className="h-4 w-4" />
-                Copiar enlace
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Related cars */}
-      {related.length > 0 && (
-        <div className="mt-16">
-          <h2 className="font-heading text-2xl font-bold text-gray-900 mb-6">
-            También te puede interesar
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {related.map(car => (
-              <Link
-                key={car.id}
-                to={`/autos/${toSlug(car.modelo)}`}
-                className="group bg-white rounded-2xl border border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300"
-              >
-                <div className="relative aspect-[16/10] bg-gray-100 overflow-hidden">
-                  {car.imagenes?.[0] ? (
-                    <img
-                      src={car.imagenes[0]}
-                      alt={`${car.marca} ${car.modelo}`}
-                      loading="lazy"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300 text-sm">
-                      Sin imagen
+              {/* Specs grid */}
+              {fichaItems.length > 0 && (
+                <div className="grid grid-cols-2 gap-3 mb-8">
+                  {fichaItems.map(item => (
+                    <div key={item.label} className="bg-gray-50 rounded-xl px-4 py-3">
+                      <p className="text-xs text-gray-400 font-medium mb-0.5">{item.label}</p>
+                      <p className="text-sm font-semibold text-gray-800">{item.value}</p>
                     </div>
-                  )}
+                  ))}
                 </div>
-                <div className="p-4">
-                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-0.5">{car.marca}</p>
-                  <h3 className="font-heading text-base font-bold text-gray-900 leading-snug">{car.modelo}</h3>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {car.año}{car.kilometraje ? ` · ${Number(car.kilometraje).toLocaleString('es-MX')} km` : ''}
-                  </p>
-                  <div className="flex items-center justify-between mt-3">
-                    <p className="font-heading text-lg font-bold text-red-600">{formatPrice(car.precio)}</p>
-                    <span className="flex items-center gap-1 text-xs font-semibold text-gray-400 group-hover:text-red-500 transition-colors">
-                      Ver más <ArrowRightIcon className="h-3.5 w-3.5" />
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
+              )}
 
-      {/* Lightbox */}
-      {lightbox !== null && (
-        <Lightbox
-          images={imagenes}
-          index={lightbox}
-          onClose={() => setLightbox(null)}
-        />
-      )}
-    </div>
+              {/* Action buttons */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <a
+                  href={waUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-2.5 bg-[#25D366] hover:bg-[#1ebe5b] text-white px-6 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:shadow-lg hover:shadow-green-400/25"
+                >
+                  <FaWhatsapp className="h-5 w-5" />
+                  Me interesa este auto
+                </a>
+              </div>
+
+              {/* Financing calculator */}
+              <FinancingCalculator precio={Number(auto.precio)} />
+
+              {/* Share */}
+              <div className="mt-4">
+                <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-2">Compartir</p>
+                <div className="flex gap-2">
+                  <a
+                    href={shareWaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 hover:border-green-300 hover:bg-green-50 text-sm text-gray-600 hover:text-green-700 transition-all"
+                  >
+                    <FaWhatsapp className="h-4 w-4" />
+                    WhatsApp
+                  </a>
+                  <button
+                    onClick={copyLink}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-sm text-gray-600 transition-all"
+                  >
+                    <LinkIcon className="h-4 w-4" />
+                    Copiar enlace
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Related cars */}
+          {related.length > 0 && (
+            <div className="mt-16">
+              <h2 className="font-heading text-2xl font-bold text-gray-900 mb-6">
+                También te puede interesar
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {related.map(car => (
+                  <Link
+                    key={car.id}
+                    to={`/autos/${toSlug(car.modelo)}`}
+                    className="group bg-white rounded-2xl border border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300"
+                  >
+                    <div className="relative aspect-[16/10] bg-gray-100 overflow-hidden">
+                      {car.imagenes?.[0] ? (
+                        <img
+                          src={car.imagenes[0]}
+                          alt={`${car.marca} ${car.modelo}`}
+                          loading="lazy"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300 text-sm">
+                          Sin imagen
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-0.5">{car.marca}</p>
+                      <h3 className="font-heading text-base font-bold text-gray-900 leading-snug">{car.modelo}</h3>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {car.año}{car.kilometraje ? ` · ${Number(car.kilometraje).toLocaleString('es-MX')} km` : ''}
+                      </p>
+                      <div className="flex items-center justify-between mt-3">
+                        <p className="font-heading text-lg font-bold text-red-600">{formatPrice(car.precio)}</p>
+                        <span className="flex items-center gap-1 text-xs font-semibold text-gray-400 group-hover:text-red-500 transition-colors">
+                          Ver más <ArrowRightIcon className="h-3.5 w-3.5" />
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Lightbox */}
+        {lightbox !== null && (
+          <Lightbox
+            images={imagenes}
+            index={lightbox}
+            onClose={() => setLightbox(null)}
+          />
+        )}
+      </div>
+    </>
   );
 }
