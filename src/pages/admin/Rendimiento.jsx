@@ -7,12 +7,7 @@ import { useAuth } from '../../context/AuthContext'
 import {
   addPDFHeader, addPDFFooters, buildPeriodString, TABLE_STYLES,
 } from '../../lib/pdfUtils'
-
-function formatPrice(p) {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency', currency: 'MXN', maximumFractionDigits: 0,
-  }).format(p ?? 0)
-}
+import { formatPrice } from '../../lib/utils'
 
 function computeKPIs(leads, sellerId) {
   const assigned  = leads.filter(l => l.assigned_to === sellerId)

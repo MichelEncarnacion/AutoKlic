@@ -3,18 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
 import { supabase } from '../lib/supabase';
-
-function toSlug(str) {
-  return str.toLowerCase().replace(/\s+/g, '-');
-}
-
-function formatPrice(price) {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-    maximumFractionDigits: 0,
-  }).format(price);
-}
+import { formatPrice, toSlug } from '../lib/utils';
 
 export default function FeaturedCars() {
   const [autos, setAutos] = useState([]);
@@ -90,6 +79,7 @@ export default function FeaturedCars() {
                       <img
                         src={imagen}
                         alt={`${auto.marca} ${auto.modelo}`}
+                        loading="lazy"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (

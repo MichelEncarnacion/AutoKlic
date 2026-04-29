@@ -9,12 +9,7 @@ import {
   ChevronDownIcon, ChevronUpIcon, TrashIcon, ArrowRightIcon,
 } from '@heroicons/react/24/outline'
 import logo from '../../assets/logo.png'
-
-function formatPrice(p) {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency', currency: 'MXN', maximumFractionDigits: 0,
-  }).format(p ?? 0)
-}
+import { formatPrice } from '../../lib/utils'
 
 function costoTotal(compra, gastos) {
   const extras = (gastos[compra.id] ?? []).reduce((sum, g) => sum + Number(g.monto), 0)

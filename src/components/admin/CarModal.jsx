@@ -169,7 +169,7 @@ export default function CarModal({ car, onClose, onSaved }) {
                     onDragEnd={onDragEnd}
                     className="relative cursor-grab group"
                   >
-                    <img src={url} alt="" className="w-20 h-20 object-cover rounded-xl border border-gray-200" />
+                    <img src={url} alt="" loading="lazy" className="w-20 h-20 object-cover rounded-xl border border-gray-200" />
                     {/* Remove button — always visible on touch devices */}
                     <button
                       type="button"

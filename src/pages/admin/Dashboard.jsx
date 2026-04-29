@@ -38,10 +38,6 @@ const STATUS_BG = {
   closed:     'bg-gray-100',
 }
 
-function formatPrice(p) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(p)
-}
-
 export default function Dashboard() {
   const { profile } = useAuth()
   const [cars, setCars]   = useState([])
@@ -55,8 +51,7 @@ export default function Dashboard() {
     ]).then(([{ data: c }, { data: l }]) => {
       setCars(c ?? [])
       setLeads(l ?? [])
-      setLoading(false)
-    })
+    }).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
   // ── Computed stats ──────────────────────────────────────────

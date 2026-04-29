@@ -10,9 +10,8 @@ import {
   addPDFHeader, addPDFFooters, buildPeriodString, makeStatusHook,
 } from '../../lib/pdfUtils'
 
-function formatPrice(p) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(p)
-}
+import { formatPrice } from '../../lib/utils'
+import { CAR_STATUS_LABELS, LEAD_STATUS_LABELS } from '../../lib/constants'
 
 function downloadCSV(filename, headers, rows) {
   const BOM = '\uFEFF'
@@ -25,7 +24,7 @@ function downloadCSV(filename, headers, rows) {
   URL.revokeObjectURL(url)
 }
 
-const STATUS_LABELS = { available: 'Disponible', sold: 'Vendido', reserved: 'Reservado', pending: 'Nuevo', reviewing: 'En revisión', offer_made: 'Oferta enviada', closed: 'Cerrado' }
+const STATUS_LABELS = { ...CAR_STATUS_LABELS, ...LEAD_STATUS_LABELS }
 
 export default function Reportes() {
   const [cars, setCars] = useState([])
@@ -41,8 +40,7 @@ export default function Reportes() {
     ]).then(([{ data: c }, { data: l }]) => {
       setCars(c ?? [])
       setLeads(l ?? [])
-      setLoading(false)
-    })
+    }).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
   function filterByDate(items) {

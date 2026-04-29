@@ -4,17 +4,8 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import CarModal from '../../components/admin/CarModal'
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
-
-const STATUS_LABELS = { available: 'Disponible', sold: 'Vendido', reserved: 'Reservado' }
-const STATUS_COLORS = {
-  available: 'bg-green-100 text-green-700',
-  sold: 'bg-gray-100 text-gray-500',
-  reserved: 'bg-yellow-100 text-yellow-700',
-}
-
-function formatPrice(price) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(price)
-}
+import { formatPrice } from '../../lib/utils'
+import { CAR_STATUS_LABELS as STATUS_LABELS, CAR_STATUS_COLORS as STATUS_COLORS } from '../../lib/constants'
 
 export default function Inventario() {
   const { profile } = useAuth()
@@ -87,7 +78,7 @@ export default function Inventario() {
                 <tr key={car.id} className="hover:bg-gray-50 transition">
                   <td className="px-4 py-3 flex items-center gap-3">
                     {car.imagenes?.[0]
-                      ? <img src={car.imagenes[0]} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                      ? <img src={car.imagenes[0]} alt="" loading="lazy" className="w-12 h-12 rounded-lg object-cover" />
                       : <div className="w-12 h-12 rounded-lg bg-gray-100" />
                     }
                     <div>
