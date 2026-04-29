@@ -12,6 +12,8 @@ import { CAR_STATUS_LABELS as STATUS_LABELS, CAR_STATUS_COLORS as STATUS_COLORS 
 function DarkGallery({ imagenes, onImageClick }) {
   const [current, setCurrent] = useState(0)
 
+  useEffect(() => { setCurrent(0) }, [imagenes])
+
   if (imagenes.length === 0) {
     return (
       <div className="bg-[#0f172a] aspect-[4/3] flex items-center justify-center text-gray-500 text-sm">
@@ -23,7 +25,12 @@ function DarkGallery({ imagenes, onImageClick }) {
   return (
     <div className="bg-[#0f172a]">
       {/* Main image */}
-      <div className="relative cursor-zoom-in" onClick={() => onImageClick(current)}>
+      <button
+        type="button"
+        aria-label="Ampliar imagen"
+        className="relative w-full cursor-zoom-in focus:outline-none"
+        onClick={() => onImageClick?.(current)}
+      >
         <img
           src={imagenes[current]}
           alt={`Foto ${current + 1}`}
@@ -33,16 +40,19 @@ function DarkGallery({ imagenes, onImageClick }) {
         <span className="absolute bottom-3 right-3 bg-black/60 text-white text-xs font-semibold px-2.5 py-1 rounded-full">
           {current + 1} / {imagenes.length}
         </span>
-        <span className="absolute bottom-3 left-3 bg-black/50 text-white/70 text-xs px-2.5 py-1 rounded-full">
+        <span className="absolute bottom-3 left-3 bg-black/50 text-white/70 text-xs px-2.5 py-1 rounded-full md:hidden">
           Toca para ampliar
         </span>
-      </div>
+      </button>
       {/* Thumbnails */}
       {imagenes.length > 1 && (
         <div className="flex gap-1.5 p-2 overflow-x-auto">
           {imagenes.map((img, i) => (
             <button
-              key={i}
+              key={img}
+              type="button"
+              aria-label={`Foto ${i + 1} de ${imagenes.length}`}
+              aria-pressed={i === current}
               onClick={() => setCurrent(i)}
               className={`shrink-0 w-14 h-10 rounded overflow-hidden border-2 transition-all ${
                 i === current ? 'border-red-500 opacity-100' : 'border-transparent opacity-50 hover:opacity-75'
