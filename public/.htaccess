@@ -1,4 +1,6 @@
 # SPA fallback for Apache (cPanel). Copied into dist/ by Vite via public/.
+Options -Indexes
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /

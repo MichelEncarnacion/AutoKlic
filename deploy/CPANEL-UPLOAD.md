@@ -7,15 +7,15 @@
 
 ## Credenciales admin (arranque limpio)
 
-Tras importar `sql/schema.sql` + `sql/seed-admin.sql`:
+Tras importar `sql/schema.sql` + `sql/seed-admin.sql` (con un hash que **tú** generaste):
 
-| Campo | Valor |
-|-------|--------|
-| Email | `admin@autoclik.michel-encarnacion.dev` |
-| Password temporal | `AdminTemp2026!` |
-| Login | https://autoclik.michel-encarnacion.dev/login |
-
-**Obligatorio:** al primer acceso, ir a **Perfil** y cambiar la contraseña.
+1. Genera password fuerte y su hash:
+   ```bash
+   php -r "echo password_hash('TU_PASSWORD_FUERTE', PASSWORD_DEFAULT), PHP_EOL;"
+   ```
+2. Pon el hash en `sql/seed-admin.sql` (`CHANGE_ME_BCRYPT_HASH`) — **nunca** commits de la contraseña en texto claro.
+3. Guarda email + password solo fuera de git (gestor de contraseñas / notas internas).
+4. Login: https://autoclik.michel-encarnacion.dev/login → **Perfil** → rotar password.
 
 Catálogo, leads y compras empiezan vacíos (sin import de Supabase).
 

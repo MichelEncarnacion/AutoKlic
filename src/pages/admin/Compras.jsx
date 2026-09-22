@@ -1000,7 +1000,10 @@ export default function Compras() {
                   </p>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => window.open(existingUrl, '_blank', 'noopener,noreferrer')}
+                      onClick={async () => {
+                        const { error } = await api.upload.openCompraDoc(existingUrl)
+                        if (error) toast.error(error.message || 'No se pudo abrir')
+                      }}
                       className="flex-1 px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
                     >
                       Ver documento

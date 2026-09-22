@@ -43,6 +43,7 @@ function handle_action(string $action, PDO $pdo, Auth $auth, array $config, arra
 
         case 'upload_car_image': upload_car_image($pdo, $auth, $config); break;
         case 'upload_compra_doc': upload_compra_doc($pdo, $auth, $config); break;
+        case 'serve_compra_doc': serve_compra_doc($auth, $config); break;
         case 'upload_delete': upload_delete($auth, $config); break;
 
         case 'users_create': users_create($pdo, $auth); break;
@@ -145,12 +146,8 @@ function auth_request_reset(PDO $pdo, array $config): void
     $headers = "From: {$fromName} <{$from}>\r\nContent-Type: text/plain; charset=UTF-8";
     @mail($email, $subject, $message, $headers);
 
-    $out = ['ok' => true];
-    // Helpful for admin testing before mail is configured (not a secret if token emailed)
-    if (!empty($body['return_link'])) {
-        $out['reset_link'] = $link;
-    }
-    Response::ok($out);
+    // Never return reset_link in JSON — tokens must only go out via email.
+    Response::ok(['ok' => true]);
 }
 
 function auth_reset_password(PDO $pdo): void
@@ -726,10 +723,41 @@ function upload_compra_doc(PDO $pdo, Auth $auth, array $config): void
         Response::error('Error al guardar archivo', 500);
     }
     $rel = "compra-docs/{$compraId}/{$segment}/{$name}";
+    // Auth-gated URL — direct /uploads/compra-docs/ is denied by .htaccess
+    $serveUrl = rtrim($config['site_url'], '/') . '/api/upload/compra-doc?path=' . rawurlencode($rel);
     Response::ok([
         'path' => $rel,
-        'publicUrl' => public_upload_url($config, $rel),
+        'publicUrl' => $serveUrl,
     ]);
+}
+
+/** Stream a compra doc to authenticated staff (webroot compra-docs is denied). */
+function serve_compra_doc(Auth $auth, array $config): void
+{
+    $auth->requireRole(['admin', 'seller']);
+    $path = (string) (query_param('path') ?? '');
+    if ($path === '' || str_contains($path, '..')) {
+        Response::error('path inválido');
+    }
+    if (str_contains($path, '/compra-docs/')) {
+        $path = 'compra-docs/' . explode('/compra-docs/', $path, 2)[1];
+    }
+    if (!preg_match('#^compra-docs/[a-zA-Z0-9._/-]+$#', $path)) {
+        Response::error('path inválido');
+    }
+    $full = rtrim($config['uploads_path'], '/') . '/' . $path;
+    if (!is_file($full)) {
+        Response::error('Archivo no encontrado', 404);
+    }
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime = finfo_file($finfo, $full) ?: 'application/octet-stream';
+    finfo_close($finfo);
+    header('Content-Type: ' . $mime);
+    header('Content-Length: ' . (string) filesize($full));
+    header('Content-Disposition: inline; filename="' . basename($full) . '"');
+    header('X-Content-Type-Options: nosniff');
+    readfile($full);
+    exit;
 }
 
 function upload_delete(Auth $auth, array $config): void
