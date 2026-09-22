@@ -1,2 +1,4 @@
+# Keep upload dirs in git; uploaded files stay local.
 *
 !.gitignore
+!.htaccess
