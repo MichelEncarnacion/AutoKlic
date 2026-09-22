@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import { format, parseISO, subDays } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { supabase } from '../../lib/supabase'
+import { api } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import {
   TrashIcon,
@@ -53,14 +53,10 @@ export default function Leads() {
 
   useEffect(() => {
     if (!profile) return
-    const leadsQuery = profile.role === 'admin'
-      ? supabase.from('leads').select('*').order('created_at', { ascending: false })
-      : supabase.from('leads').select('*').eq('assigned_to', profile.id).order('created_at', { ascending: false })
-
     Promise.all([
-      leadsQuery,
-      supabase.from('profiles').select('id, nombre, email, role').in('role', ['admin', 'seller']).order('nombre'),
-      supabase.from('settings').select('value').eq('key', 'follow_up_days').single(),
+      api.leads.list(),
+      api.profiles.list({ roles: ['admin', 'seller'], order: 'nombre' }),
+      api.settings.get('follow_up_days'),
     ]).then(([{ data: l }, { data: s }, { data: setting }]) => {
       setLeads(l ?? [])
       setStaff(s ?? [])
@@ -84,14 +80,11 @@ export default function Leads() {
     }
 
     const now = new Date().toISOString()
-    const { error } = await supabase
-      .from('leads')
-      .update({ status: newStatus, last_activity_at: now })
-      .eq('id', id)
+    const { error } = await api.leads.update(id, { status: newStatus, last_activity_at: now })
     if (error) { toast.error('Error al actualizar'); return }
     toast.success('Estado actualizado')
     setLeads(l => l.map(x => x.id === id ? { ...x, status: newStatus, last_activity_at: now } : x))
-    const { error: evErr } = await supabase.from('lead_events').insert({
+    const { error: evErr } = await api.leadEvents.create({
       lead_id: id, user_id: profile.id, event_type: 'status_change',
       old_value: oldLabel, new_value: newLabel,
     })
@@ -106,14 +99,11 @@ export default function Leads() {
       : 'Sin asignar'
     const newName = value ? (staffById[value]?.nombre ?? 'Desconocido') : 'Sin asignar'
     const now = new Date().toISOString()
-    const { error } = await supabase
-      .from('leads')
-      .update({ assigned_to: value, last_activity_at: now })
-      .eq('id', id)
+    const { error } = await api.leads.update(id, { assigned_to: value, last_activity_at: now })
     if (error) { toast.error('Error al asignar'); return }
     toast.success(value ? 'Lead asignado' : 'Asignación removida')
     setLeads(l => l.map(x => x.id === id ? { ...x, assigned_to: value, last_activity_at: now } : x))
-    const { error: evErr } = await supabase.from('lead_events').insert({
+    const { error: evErr } = await api.leadEvents.create({
       lead_id: id,
       user_id: profile.id,
       event_type: 'assignment_change',
@@ -125,14 +115,11 @@ export default function Leads() {
 
   async function updateNotas(id, notas) {
     const now = new Date().toISOString()
-    const { error } = await supabase
-      .from('leads')
-      .update({ notas, last_activity_at: now })
-      .eq('id', id)
+    const { error } = await api.leads.update(id, { notas, last_activity_at: now })
     if (error) { toast.error('Error al guardar nota'); return }
     toast.success('Nota guardada')
     setLeads(l => l.map(x => x.id === id ? { ...x, notas, last_activity_at: now } : x))
-    const { error: evErr } = await supabase.from('lead_events').insert({
+    const { error: evErr } = await api.leadEvents.create({
       lead_id: id,
       user_id: profile.id,
       event_type: 'note_added',
@@ -151,11 +138,11 @@ export default function Leads() {
       last_activity_at: now,
       precio_cierre: precioCierre,
     }
-    const { error } = await supabase.from('leads').update(updatePayload).eq('id', id)
+    const { error } = await api.leads.update(id, updatePayload)
     if (error) { toast.error('Error al actualizar'); return }
     toast.success('Estado actualizado')
     setLeads(l => l.map(x => x.id === id ? { ...x, ...updatePayload } : x))
-    const { error: evErr } = await supabase.from('lead_events').insert({
+    const { error: evErr } = await api.leadEvents.create({
       lead_id: id,
       user_id: profile.id,
       event_type: 'status_change',
@@ -169,7 +156,7 @@ export default function Leads() {
   }
 
   async function deleteLead(id) {
-    const { error } = await supabase.from('leads').delete().eq('id', id)
+    const { error } = await api.leads.remove(id)
     if (error) toast.error('Error al eliminar')
     else { toast.success('Lead eliminado'); setLeads(l => l.filter(x => x.id !== id)) }
     setConfirmDelete(null)
@@ -190,12 +177,9 @@ export default function Leads() {
   }, [leads, threshold])
 
   async function saveThreshold(days) {
-    const { error } = await supabase
-      .from('settings')
-      .upsert(
-        { key: 'follow_up_days', value: String(days), updated_at: new Date().toISOString() },
-        { onConflict: 'key' }
-      )
+    const { error } = await api.settings.upsert(
+      { key: 'follow_up_days', value: String(days), updated_at: new Date().toISOString() }
+    )
     if (error) { toast.error('Error al guardar configuración'); return }
     setThreshold(days)
     setSettingsOpen(false)

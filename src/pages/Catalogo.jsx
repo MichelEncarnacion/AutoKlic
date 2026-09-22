@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AdjustmentsHorizontalIcon, XMarkIcon, ArrowRightIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
-import { supabase } from '../lib/supabase'
+import { api } from '../lib/api'
 import SEO from '../components/SEO'
 import { formatPrice, toSlug } from '../lib/utils'
 import { CAR_STATUS_LABELS as STATUS_LABELS, CAR_STATUS_COLORS as STATUS_COLORS } from '../lib/constants'
@@ -32,44 +32,29 @@ export default function Catalogo() {
 
   // Load filter options once
   useEffect(() => {
-    supabase
-      .from('cars')
-      .select('marca, transmision')
-      .eq('visible', true)
-      .then(({ data }) => {
-        const d = data ?? []
-        setMarcas([...new Set(d.map(c => c.marca).filter(Boolean))].sort())
-        setTransmisiones([...new Set(d.map(c => c.transmision).filter(Boolean))].sort())
-      })
+    api.cars.list({ public: 1 }).then(({ data }) => {
+      const d = data ?? []
+      setMarcas([...new Set(d.map(c => c.marca).filter(Boolean))].sort())
+      setTransmisiones([...new Set(d.map(c => c.transmision).filter(Boolean))].sort())
+    })
   }, [])
 
   // Fetch page when filters / sort / page changes
   useEffect(() => {
     setLoading(true)
-
-    let query = supabase
-      .from('cars')
-      .select('*', { count: 'exact' })
-      .eq('visible', true)
-
-    if (filters.marca)       query = query.eq('marca', filters.marca)
-    if (filters.transmision) query = query.eq('transmision', filters.transmision)
-    if (filters.minPrecio)   query = query.gte('precio', Number(filters.minPrecio))
-    if (filters.maxPrecio)   query = query.lte('precio', Number(filters.maxPrecio))
-    if (filters.minAño)      query = query.gte('año', Number(filters.minAño))
-    if (filters.maxAño)      query = query.lte('año', Number(filters.maxAño))
-
-    switch (sortBy) {
-      case 'price_asc':  query = query.order('precio',      { ascending: true });  break
-      case 'price_desc': query = query.order('precio',      { ascending: false }); break
-      case 'km_asc':     query = query.order('kilometraje', { ascending: true });  break
-      case 'year_desc':  query = query.order('año',         { ascending: false }); break
-      default:           query = query.order('created_at',  { ascending: false }); break
-    }
-
     const from = (page - 1) * PAGE_SIZE
-    query
-      .range(from, from + PAGE_SIZE - 1)
+    api.cars.list({
+      public: 1,
+      marca: filters.marca || undefined,
+      transmision: filters.transmision || undefined,
+      minPrecio: filters.minPrecio || undefined,
+      maxPrecio: filters.maxPrecio || undefined,
+      minAño: filters.minAño || undefined,
+      maxAño: filters.maxAño || undefined,
+      sort: sortBy,
+      limit: PAGE_SIZE,
+      offset: from,
+    })
       .then(({ data, count }) => {
         setCars(data ?? [])
         setTotal(count ?? 0)

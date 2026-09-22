@@ -3,7 +3,7 @@ import { format, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { supabase } from '../../lib/supabase'
+import { api } from '../../lib/api'
 import {
   GRAY_50, GRAY_200, GRAY_800,
   TABLE_STYLES,
@@ -35,8 +35,8 @@ export default function Reportes() {
 
   useEffect(() => {
     Promise.all([
-      supabase.from('cars').select('*').order('created_at', { ascending: false }),
-      supabase.from('leads').select('*').order('created_at', { ascending: false }),
+      api.cars.list({ sort: 'newest' }),
+      api.leads.list(),
     ]).then(([{ data: c }, { data: l }]) => {
       setCars(c ?? [])
       setLeads(l ?? [])

@@ -1,0 +1,4 @@
+# Deny web access to placeholders if this folder is ever under webroot
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>

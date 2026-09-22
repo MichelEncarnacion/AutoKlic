@@ -1,0 +1,27 @@
+# SPA fallback for Apache (cPanel). Copied into dist/ by Vite via public/.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Pass Authorization header to PHP (some hosts strip it)
+  RewriteCond %{HTTP:Authorization} .
+  RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+  # Existing files/dirs
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Do not rewrite API or uploads
+  RewriteCond %{REQUEST_URI} !^/api/
+  RewriteCond %{REQUEST_URI} !^/uploads/
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# Optional: block access to sensitive patterns if present under webroot
+<FilesMatch "^\.env">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+</FilesMatch>

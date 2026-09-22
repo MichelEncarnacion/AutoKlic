@@ -93,7 +93,7 @@ function AdminGuide() {
         <Step number="3" text='Sube las imágenes del vehículo. Puedes arrastrarlas para cambiar su orden. La primera imagen será la portada.' />
         <Step number="4" text='Marca "Visible en catálogo" si quieres que aparezca en la página pública. Desmárcalo para mantenerlo como borrador.' />
         <Step number="5" text='Haz clic en "Guardar" para publicar.' />
-        <Tip text="Las imágenes se almacenan en Supabase Storage. Recomendamos subir al menos 3 fotos por vehículo (frente, lateral y interior)." />
+        <Tip text="Las imágenes se almacenan en el servidor (carpeta uploads). Recomendamos subir al menos 3 fotos por vehículo (frente, lateral y interior)." />
 
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-5">Editar o eliminar</p>
         <Step number="1" text="En la tabla de inventario, haz clic en el ícono de lápiz (✏️) para editar un auto." />

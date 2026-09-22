@@ -9,7 +9,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { formatDistanceToNow, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { supabase } from '../../lib/supabase'
+import { api } from '../../lib/api'
 
 const EVENT_ICONS = {
   status_change:     ArrowRightIcon,
@@ -31,11 +31,7 @@ export default function LeadHistoryModal({ leadId, leadNombre, onClose }) {
   async function fetchEvents() {
     setLoading(true)
     setError(null)
-    const { data, error: err } = await supabase
-      .from('lead_events')
-      .select('*, profiles!lead_events_user_id_fkey(nombre)')
-      .eq('lead_id', leadId)
-      .order('created_at', { ascending: false })
+    const { data, error: err } = await api.leadEvents.list(leadId)
     if (err) setError(err.message)
     else setEvents(data ?? [])
     setLoading(false)

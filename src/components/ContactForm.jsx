@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { PhoneIcon, MapPinIcon, EnvelopeIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { FaWhatsapp } from 'react-icons/fa';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 
 const contactInfo = [
   {
@@ -39,7 +39,7 @@ export default function ContactForm() {
 
   async function onSubmit(data) {
     setSubmitError('');
-    const { error } = await supabase.from('leads').insert([{
+    const { error } = await api.leads.create({
       nombre:      data.nombre,
       email:       data.email,
       telefono:    data.telefono || null,
@@ -49,7 +49,7 @@ export default function ContactForm() {
       modelo:      null,
       año:         null,
       kilometraje: null,
-    }]);
+    });
 
     if (error) {
       setSubmitError('Ocurrió un error al enviar tu mensaje. Intenta de nuevo.');

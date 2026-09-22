@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { supabase } from '../lib/supabase'
+import { api } from '../lib/api'
 import SEO from '../components/SEO'
 
 export default function VendeTuAuto() {
@@ -10,19 +10,17 @@ export default function VendeTuAuto() {
 
   async function onSubmit(data) {
     const id = crypto.randomUUID()
-    const { error } = await supabase
-      .from('leads')
-      .insert([{
-        id,
-        marca: data.marca,
-        modelo: data.modelo,
-        año: Number(data.año),
-        kilometraje: Number(data.kilometraje),
-        descripcion: data.descripcion || null,
-        nombre: data.nombre,
-        email: data.email,
-        telefono: data.telefono,
-      }])
+    const { error } = await api.leads.create({
+      id,
+      marca: data.marca,
+      modelo: data.modelo,
+      año: Number(data.año),
+      kilometraje: Number(data.kilometraje),
+      descripcion: data.descripcion || null,
+      nombre: data.nombre,
+      email: data.email,
+      telefono: data.telefono,
+    })
 
     if (error) {
       toast.error('Ocurrió un error. Intenta de nuevo.')

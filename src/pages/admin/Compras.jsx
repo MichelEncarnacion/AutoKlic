@@ -3,7 +3,7 @@ import { format, parseISO } from 'date-fns'
 import toast from 'react-hot-toast'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { supabase } from '../../lib/supabase'
+import { api } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import {
   ChevronDownIcon, ChevronUpIcon, TrashIcon, ArrowRightIcon,
@@ -64,9 +64,7 @@ export default function Compras() {
     setLoading(true)
     setError(null)
     try {
-      let query = supabase.from('compras').select('*').order('fecha_compra', { ascending: false })
-      if (!isAdmin) query = query.eq('created_by', profile?.id ?? '')
-      const { data, error: err } = await query
+      const { data, error: err } = await api.compras.list()
       if (err) throw err
       setCompras(data ?? [])
     } catch (e) {
@@ -85,8 +83,7 @@ export default function Compras() {
     setExpanded(id)
     if (gastos[id] !== undefined) return
     setLoadingGastos(prev => ({ ...prev, [id]: true }))
-    const { data, error: err } = await supabase
-      .from('gastos_compra').select('*').eq('compra_id', id).order('created_at', { ascending: true })
+    const { data, error: err } = await api.gastos.listByCompra(id)
     setLoadingGastos(prev => ({ ...prev, [id]: false }))
     if (err) { toast.error('Error al cargar gastos'); return }
     setGastos(prev => ({ ...prev, [id]: data ?? [] }))
@@ -109,22 +106,17 @@ export default function Compras() {
     }
 
     setDocUploading(true)
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-    const path = `${compra.id}/${pathSegment}/${Date.now()}-${safeName}`
-    const { error: uploadErr } = await supabase.storage
-      .from('compra-docs').upload(path, file, { upsert: false })
+    const { data: up, error: uploadErr } = await api.upload.compraDoc(file, compra.id, pathSegment)
     if (uploadErr) {
       setDocUploading(false)
       toast.error('Error al subir el archivo'); return
     }
 
-    const { data: { publicUrl } } = supabase.storage.from('compra-docs').getPublicUrl(path)
+    const publicUrl = up.publicUrl
 
-    const { error: updateErr } = await supabase.from('compras')
-      .update({ [urlField]: publicUrl, [field]: true })
-      .eq('id', compra.id)
+    const { error: updateErr } = await api.compras.update(compra.id, { [urlField]: publicUrl, [field]: true })
     if (updateErr) {
-      await supabase.storage.from('compra-docs').remove([path])
+      await api.upload.remove(up.path)
       setDocUploading(false)
       toast.error('Error al guardar el documento'); return
     }
@@ -150,15 +142,13 @@ export default function Compras() {
     if (!path) { toast.error('No se pudo determinar la ruta del archivo'); return }
 
     setDocDeleting(true)
-    const { error: removeErr } = await supabase.storage.from('compra-docs').remove([path])
+    const { error: removeErr } = await api.upload.remove(path.startsWith('compra-docs/') ? path : `compra-docs/${path}`)
     if (removeErr) {
       setDocDeleting(false)
       toast.error('Error al eliminar el archivo'); return
     }
 
-    const { error: updateErr } = await supabase.from('compras')
-      .update({ [urlField]: null, [field]: false })
-      .eq('id', compra.id)
+    const { error: updateErr } = await api.compras.update(compra.id, { [urlField]: null, [field]: false })
     if (updateErr) {
       setDocDeleting(false)
       toast.error('Archivo eliminado pero no se pudo actualizar el registro'); return
@@ -176,8 +166,7 @@ export default function Compras() {
     setExporting(true)
     try {
       const ids = filtered.map(c => c.id)
-      const { data: gastosData, error: gastosErr } = await supabase
-        .from('gastos_compra').select('*').in('compra_id', ids)
+      const { data: gastosData, error: gastosErr } = await api.gastos.listByCompras(ids)
       if (gastosErr) { toast.error('Error al obtener gastos'); return }
 
       const gastosByCompra = {}
@@ -238,8 +227,7 @@ export default function Compras() {
     setExporting(true)
     try {
       const ids = filtered.map(c => c.id)
-      const { data: gastosData, error: gastosErr } = await supabase
-        .from('gastos_compra').select('*').in('compra_id', ids)
+      const { data: gastosData, error: gastosErr } = await api.gastos.listByCompras(ids)
       if (gastosErr) { toast.error('Error al obtener gastos'); return }
 
       const gastosByCompra = {}
@@ -263,7 +251,9 @@ export default function Compras() {
           const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob)
         })
         doc.addImage(dataUrl, 'PNG', 14, 8, 28, 10)
-      } catch {}
+      } catch {
+        // logo optional for PDF
+      }
 
       // Header
       doc.setFontSize(14).setFont(undefined, 'bold')
@@ -358,7 +348,7 @@ export default function Compras() {
       notas:             form.notas || null,
       created_by:        profile.id,
     }
-    const { data, error: err } = await supabase.from('compras').insert(payload).select().single()
+    const { data, error: err } = await api.compras.create(payload)
     setSaving(false)
     if (err) { toast.error('Error al registrar compra'); return }
     toast.success('Compra registrada')
@@ -370,7 +360,7 @@ export default function Compras() {
   async function handleDelete() {
     if (!confirmDelete) return
     setDeleting(true)
-    const { error: err } = await supabase.from('compras').delete().eq('id', confirmDelete.id)
+    const { error: err } = await api.compras.remove(confirmDelete.id)
     setDeleting(false)
     if (err) { toast.error('Error al eliminar'); return }
     toast.success('Compra eliminada')
@@ -389,7 +379,7 @@ export default function Compras() {
       monto:     Number(gf.monto),
       fecha:     gf.fecha || null,
     }
-    const { data, error: err } = await supabase.from('gastos_compra').insert(payload).select().single()
+    const { data, error: err } = await api.gastos.create(payload)
     if (err) { toast.error('Error al agregar gasto'); return }
     setGastos(prev => ({ ...prev, [compraId]: [...(prev[compraId] ?? []), data] }))
     setGastoForm(prev => ({ ...prev, [compraId]: { concepto: '', monto: '', fecha: '' } }))
@@ -425,15 +415,15 @@ export default function Compras() {
       imagenes:    [],
     }
 
-    const { data: newCar, error: carErr } = await supabase.from('cars').insert(carPayload).select().single()
+    const { data: newCar, error: carErr } = await api.cars.create(carPayload)
     if (carErr) {
       setSendingToInventario(false)
       toast.error('Error al crear auto en inventario'); return
     }
 
-    const { error: linkErr } = await supabase.from('compras').update({ car_id: newCar.id }).eq('id', compra.id)
+    const { error: linkErr } = await api.compras.update(compra.id, { car_id: newCar.id })
     if (linkErr) {
-      const { error: cleanupErr } = await supabase.from('cars').delete().eq('id', newCar.id)
+      const { error: cleanupErr } = await api.cars.remove(newCar.id)
       if (cleanupErr) toast.error('No se pudo limpiar el registro — contacta al administrador')
       setSendingToInventario(false)
       toast.error('Error al vincular con la compra'); return
