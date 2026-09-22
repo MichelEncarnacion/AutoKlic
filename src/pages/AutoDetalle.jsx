@@ -4,7 +4,7 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeftIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon, LinkIcon } from '@heroicons/react/24/outline'
 import { FaWhatsapp } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import { api } from '../lib/api';
+import { listAllPublicCars } from '../lib/publicCars';
 import SEO from '../components/SEO';
 import { formatPrice, toSlug } from '../lib/utils';
 import { CAR_STATUS_LABELS as STATUS_LABELS, CAR_STATUS_COLORS as STATUS_COLORS } from '../lib/constants';
@@ -338,7 +338,7 @@ export default function AutoDetalle() {
   const galleryRef = useRef(null)
 
   useEffect(() => {
-    api.cars.list({ public: 1 })
+    listAllPublicCars()
       .then(({ data }) => {
         const all = data ?? []
         const found = all.find(c => toSlug(c.modelo) === modelo);

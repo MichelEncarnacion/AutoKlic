@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AdjustmentsHorizontalIcon, XMarkIcon, ArrowRightIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
-import { api } from '../lib/api'
+import { listPublicCars, listAllPublicCars } from '../lib/publicCars'
 import SEO from '../components/SEO'
 import { formatPrice, toSlug } from '../lib/utils'
 import { CAR_STATUS_LABELS as STATUS_LABELS, CAR_STATUS_COLORS as STATUS_COLORS } from '../lib/constants'
@@ -32,7 +32,7 @@ export default function Catalogo() {
 
   // Load filter options once
   useEffect(() => {
-    api.cars.list({ public: 1 }).then(({ data }) => {
+    listAllPublicCars().then(({ data }) => {
       const d = data ?? []
       setMarcas([...new Set(d.map(c => c.marca).filter(Boolean))].sort())
       setTransmisiones([...new Set(d.map(c => c.transmision).filter(Boolean))].sort())
@@ -43,8 +43,7 @@ export default function Catalogo() {
   useEffect(() => {
     setLoading(true)
     const from = (page - 1) * PAGE_SIZE
-    api.cars.list({
-      public: 1,
+    listPublicCars({
       marca: filters.marca || undefined,
       transmision: filters.transmision || undefined,
       minPrecio: filters.minPrecio || undefined,

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
-import { api } from '../lib/api';
+import { listPublicCars } from '../lib/publicCars';
 import { formatPrice, toSlug } from '../lib/utils';
 
 export default function FeaturedCars() {
@@ -10,7 +10,7 @@ export default function FeaturedCars() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.cars.list({ public: 1, limit: 3, sort: 'newest' }).then(({ data }) => {
+    listPublicCars({ limit: 3, sort: 'newest' }).then(({ data }) => {
       setAutos(data ?? []);
       setLoading(false);
     });
