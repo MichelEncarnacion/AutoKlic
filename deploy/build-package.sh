@@ -24,7 +24,7 @@ cp -a dist/. "$OUT/public_html/"
 cp -a api/. "$OUT/public_html/api/"
 
 # SQL + config template
-cp sql/schema.sql sql/seed-admin.sql "$OUT/sql/"
+cp sql/schema.sql sql/seed-admin.sql sql/seed-cars-mock.sql "$OUT/sql/"
 cp config/config.example.php "$OUT/config-outside-webroot/autoklic-config.php"
 cp deploy/CPANEL-UPLOAD.md "$OUT/README-UPLOAD.md"
 

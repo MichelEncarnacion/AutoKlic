@@ -181,15 +181,18 @@ export default function Catalogo() {
             </div>
           ) : cars.length === 0 ? (
             <div className="text-center py-20">
-              <p className="text-4xl mb-4">🔍</p>
-              <p className="font-semibold text-gray-700 mb-1">Sin resultados</p>
-              <p className="text-sm text-gray-400 mb-6">No hay autos con los filtros seleccionados.</p>
-              <button
-                onClick={() => { setPage(1); setFilters(EMPTY_FILTERS) }}
-                className="text-sm font-semibold text-red-600 hover:text-red-700 transition-colors"
-              >
-                Limpiar filtros
-              </button>
+              <p className="font-heading text-xl font-bold text-gray-900 mb-2">Sin resultados</p>
+              <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
+                No hay autos con estos filtros. Prueba limpiar o escríbenos por WhatsApp.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  onClick={() => { setPage(1); setFilters(EMPTY_FILTERS) }}
+                  className="text-sm font-semibold text-red-600 hover:text-red-700 transition-colors"
+                >
+                  Limpiar filtros
+                </button>
+              </div>
             </div>
           ) : (
             <>
@@ -213,22 +216,26 @@ export default function Catalogo() {
                           Sin imagen
                         </div>
                       )}
-                      {car.estado && (
-                        <span className={`absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_COLORS[car.estado] ?? 'bg-gray-100 text-gray-600'}`}>
-                          {STATUS_LABELS[car.estado] ?? car.estado}
+                      {car.estado || car.status ? (
+                        <span className={`absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_COLORS[car.estado || car.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                          {STATUS_LABELS[car.estado || car.status] ?? car.estado ?? car.status}
                         </span>
-                      )}
+                      ) : null}
                     </div>
 
                     <div className="p-4">
                       <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-0.5">{car.marca}</p>
                       <h3 className="font-heading text-base font-bold text-gray-900 leading-snug">{car.modelo}</h3>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {car.año}{car.kilometraje ? ` · ${Number(car.kilometraje).toLocaleString('es-MX')} km` : ''}
+                      <p className="text-xs text-gray-500 mt-1">
+                        {[
+                          car.año,
+                          car.kilometraje ? `${Number(car.kilometraje).toLocaleString('es-MX')} km` : null,
+                          car.transmision,
+                        ].filter(Boolean).join(' · ')}
                       </p>
-                      <div className="flex items-center justify-between mt-3">
-                        <p className="font-heading text-lg font-bold text-red-600">{formatPrice(car.precio)}</p>
-                        <span className="flex items-center gap-1 text-xs font-semibold text-gray-400 group-hover:text-red-500 transition-colors">
+                      <div className="flex items-end justify-between mt-3 gap-2">
+                        <p className="font-heading text-xl font-bold text-red-600 leading-none">{formatPrice(car.precio)}</p>
+                        <span className="flex items-center gap-1 text-xs font-semibold text-gray-400 group-hover:text-red-500 transition-colors shrink-0">
                           Ver más
                           <ArrowRightIcon className="h-3.5 w-3.5" />
                         </span>

@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { listAllPublicCars } from '../lib/publicCars';
 import SEO from '../components/SEO';
 import { formatPrice, toSlug } from '../lib/utils';
+import { whatsappUrl } from '../lib/contact';
 import { CAR_STATUS_LABELS as STATUS_LABELS, CAR_STATUS_COLORS as STATUS_COLORS } from '../lib/constants';
 
 const EQUIPMENT_MAP = [
@@ -421,10 +422,10 @@ export default function AutoDetalle() {
     { label: 'Infoentretenimiento', value: auto.infoentretenimiento },
   ].filter(item => item.value != null && item.value !== '');
 
-  const msg       = encodeURIComponent(`Hola, me interesa el *${auto.marca} ${auto.modelo} ${auto.año}* en *${formatPrice(auto.precio)}*. ¿Está disponible?`)
-  const waUrl     = `https://wa.me/522213411834?text=${msg}`
-  const agendarMsg = encodeURIComponent(`Hola, me gustaría agendar una visita para ver el *${auto.marca} ${auto.modelo} ${auto.año}*. ¿Cuándo tienen disponibilidad?`)
-  const agendarUrl = `https://wa.me/522213411834?text=${agendarMsg}`
+  const msg = `Hola, me interesa el *${auto.marca} ${auto.modelo} ${auto.año}* en *${formatPrice(auto.precio)}*. ¿Está disponible?`
+  const waUrl = whatsappUrl(msg)
+  const agendarMsg = `Hola, me gustaría agendar una visita para ver el *${auto.marca} ${auto.modelo} ${auto.año}*. ¿Cuándo tienen disponibilidad?`
+  const agendarUrl = whatsappUrl(agendarMsg)
   const shareWaMsg = encodeURIComponent(`Mira este auto: ${auto.marca} ${auto.modelo} ${auto.año} — ${formatPrice(auto.precio)}\n${window.location.href}`)
   const shareWaUrl = `https://wa.me/?text=${shareWaMsg}`
 
