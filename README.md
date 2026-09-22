@@ -27,9 +27,10 @@ Resumen: build Vite → subir `dist/` + `api/` + `uploads/` a `public_html` → 
 
 ### Admin inicial (seed)
 
-- Email: `admin@autoclik.michel-encarnacion.dev`
-- Password temporal: `AdminTemp2026!`
-- Cambiar en **Perfil** al primer login.
+1. Genera un hash bcrypt: `php -r "echo password_hash('TU_PASSWORD_FUERTE', PASSWORD_DEFAULT), PHP_EOL;"`
+2. Sustituye `CHANGE_ME_BCRYPT_HASH` en `sql/seed-admin.sql` (no dejes la contraseña en texto claro en el repo).
+3. Importa el SQL una sola vez; guarda la contraseña **fuera de git**.
+4. Tras el primer login, cámbiala en **Perfil**.
 
 ## Variables
 

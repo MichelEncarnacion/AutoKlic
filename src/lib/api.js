@@ -231,6 +231,42 @@ export const api = {
     async remove(path) {
       return request('/upload/delete', { method: 'POST', body: { path } })
     },
+    /** Open a compra doc via auth-gated API (direct /uploads/compra-docs is denied). */
+    async openCompraDoc(storedUrl) {
+      if (!storedUrl) return { error: { message: 'Sin documento' } }
+      let path = storedUrl
+      if (storedUrl.includes('/compra-docs/')) {
+        path = 'compra-docs/' + storedUrl.split('/compra-docs/')[1].split('?')[0]
+      } else if (storedUrl.includes('path=')) {
+        try {
+          path = decodeURIComponent(new URL(storedUrl, window.location.origin).searchParams.get('path') || '')
+        } catch {
+          path = ''
+        }
+      }
+      if (!path.startsWith('compra-docs/')) {
+        return { error: { message: 'Ruta de documento inválida' } }
+      }
+      const token = getToken()
+      if (!token) return { error: { message: 'Sesión expirada' } }
+      try {
+        const res = await fetch(
+          `${API_BASE}/upload/compra-doc?path=${encodeURIComponent(path)}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        )
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}))
+          return { error: { message: json.error || 'No se pudo abrir el documento' } }
+        }
+        const blob = await res.blob()
+        const blobUrl = URL.createObjectURL(blob)
+        window.open(blobUrl, '_blank', 'noopener,noreferrer')
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
+        return { error: null }
+      } catch (e) {
+        return { error: { message: e.message || 'Network error' } }
+      }
+    },
   },
 
   users: {

@@ -91,6 +91,7 @@ function route(string $method, string $path, PDO $pdo, Auth $auth, array $config
     // uploads
     if ($path === '/upload/car-image' && $method === 'POST') { dispatch('upload_car_image', $pdo, $auth, $config); return; }
     if ($path === '/upload/compra-doc' && $method === 'POST') { dispatch('upload_compra_doc', $pdo, $auth, $config); return; }
+    if ($path === '/upload/compra-doc' && $method === 'GET') { dispatch('serve_compra_doc', $pdo, $auth, $config); return; }
     if ($path === '/upload/delete' && $method === 'POST') { dispatch('upload_delete', $pdo, $auth, $config); return; }
 
     // users admin (also legacy)
