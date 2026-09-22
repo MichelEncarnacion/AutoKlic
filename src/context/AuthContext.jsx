@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { api, setToken } from '../lib/api'
 
 const AuthContext = createContext(null)
 
@@ -10,49 +10,51 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
-  async function loadProfile(userId) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    if (data?.active === false) {
-      setLoading(false)
-      await signOut()
-      return
+  async function bootstrap() {
+    const { data } = await api.auth.session()
+    if (data?.session?.user) {
+      if (data.profile?.active === false) {
+        setToken(null)
+        setUser(null)
+        setProfile(null)
+        setLoading(false)
+        return
+      }
+      setUser(data.session.user)
+      setProfile(data.profile)
+    } else {
+      setUser(null)
+      setProfile(null)
     }
-    setProfile(data)
+    setLoading(false)
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) loadProfile(session.user.id).finally(() => setLoading(false))
-      else setLoading(false)
-    })
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      if (session?.user) loadProfile(session.user.id).catch(() => {})
-      else { setProfile(null); setLoading(false) }
-    })
-
-    return () => subscription.unsubscribe()
+    bootstrap()
   }, [])
 
   async function signIn(email, password) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (!error) navigate('/admin/dashboard')
-    return { error }
+    const { data, error } = await api.auth.login(email, password)
+    if (error) return { error }
+    if (data?.profile?.active === false) {
+      setToken(null)
+      return { error: { message: 'Usuario desactivado' } }
+    }
+    setUser(data.user)
+    setProfile(data.profile)
+    navigate('/admin/dashboard')
+    return { error: null }
   }
 
   async function signOut() {
-    await supabase.auth.signOut()
+    await api.auth.logout()
+    setUser(null)
+    setProfile(null)
     navigate('/login')
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, signIn, signOut, setProfile }}>
       {children}
     </AuthContext.Provider>
   )

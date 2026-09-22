@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { supabase } from '../../lib/supabase'
+import { api } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import CarModal from '../../components/admin/CarModal'
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
@@ -18,7 +18,7 @@ export default function Inventario() {
   const canDelete = profile?.role === 'admin'
 
   async function loadCars() {
-    const { data } = await supabase.from('cars').select('*').order('created_at', { ascending: false })
+    const { data } = await api.cars.list({ sort: 'newest' })
     setCars(data ?? [])
     setLoading(false)
   }
@@ -28,7 +28,7 @@ export default function Inventario() {
   async function toggleVisible(car) {
     const prev = car.visible
     setCars(c => c.map(x => x.id === car.id ? { ...x, visible: !prev } : x))
-    const { error } = await supabase.from('cars').update({ visible: !prev }).eq('id', car.id)
+    const { error } = await api.cars.update(car.id, { visible: !prev })
     if (error) {
       setCars(c => c.map(x => x.id === car.id ? { ...x, visible: prev } : x))
       toast.error('Error al actualizar visibilidad')
@@ -38,7 +38,7 @@ export default function Inventario() {
   }
 
   async function confirmDelete() {
-    const { error } = await supabase.from('cars').delete().eq('id', deleteId)
+    const { error } = await api.cars.remove(deleteId)
     if (error) toast.error('Error al eliminar')
     else { toast.success('Auto eliminado'); setCars(c => c.filter(x => x.id !== deleteId)) }
     setDeleteId(null)

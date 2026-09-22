@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import { formatPrice, toSlug } from '../lib/utils';
 
 export default function FeaturedCars() {
@@ -10,16 +10,10 @@ export default function FeaturedCars() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase
-      .from('cars')
-      .select('id, marca, modelo, año, precio, imagenes')
-      .eq('visible', true)
-      .order('created_at', { ascending: false })
-      .limit(3)
-      .then(({ data }) => {
-        setAutos(data ?? []);
-        setLoading(false);
-      });
+    api.cars.list({ public: 1, limit: 3, sort: 'newest' }).then(({ data }) => {
+      setAutos(data ?? []);
+      setLoading(false);
+    });
   }, []);
 
   return (

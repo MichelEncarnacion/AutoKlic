@@ -1,8 +1,8 @@
 // src/components/SEO.jsx
 import { Helmet } from 'react-helmet-async'
 
-const SITE_NAME = 'AutoKlic'
-const SITE_URL = 'https://auto-klic.vercel.app'
+import { SITE_NAME, SITE_URL } from '../lib/site'
+
 const DEFAULT_OG = `${SITE_URL}/og-default.jpg`
 
 export default function SEO({

@@ -2,34 +2,33 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { supabase } from '../lib/supabase'
+import { api } from '../lib/api'
 
 export default function ResetPassword() {
   const navigate = useNavigate()
-  const [ready, setReady] = useState(false)
+  const [token, setToken] = useState(null)
   const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm()
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') setReady(true)
-    })
-    return () => subscription.unsubscribe()
+    const params = new URLSearchParams(window.location.search)
+    const t = params.get('token')
+    if (t) setToken(t)
   }, [])
 
   async function onSubmit({ password }) {
-    const { error } = await supabase.auth.updateUser({ password })
+    const { error } = await api.auth.resetPassword(token, password)
     if (error) {
-      toast.error('Error al actualizar la contraseña')
+      toast.error(error.message || 'Error al actualizar la contraseña')
     } else {
       toast.success('Contraseña actualizada')
-      navigate('/admin')
+      navigate('/login')
     }
   }
 
-  if (!ready) {
+  if (!token) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-500">Verificando enlace de recuperación...</p>
+        <p className="text-gray-500">Enlace de recuperación inválido o incompleto.</p>
       </div>
     )
   }

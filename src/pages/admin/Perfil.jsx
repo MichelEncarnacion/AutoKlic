@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { supabase } from '../../lib/supabase'
+import { api } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 
 const ROLE_LABELS = { admin: 'Administrador', seller: 'Vendedor', viewer: 'Visor' }
@@ -28,7 +28,7 @@ export default function Perfil() {
 
   async function onSaveName(data) {
     setSavingName(true)
-    const { error } = await supabase.from('profiles').update({ nombre: data.nombre }).eq('id', profile.id)
+    const { error } = await api.profiles.update(profile.id, { nombre: data.nombre })
     if (error) toast.error('Error al actualizar nombre')
     else toast.success('Nombre actualizado')
     setSavingName(false)
@@ -36,7 +36,7 @@ export default function Perfil() {
 
   async function onSavePassword(data) {
     setSavingPwd(true)
-    const { error } = await supabase.auth.updateUser({ password: data.newPassword })
+    const { error } = await api.auth.updatePassword(data.newPassword)
     if (error) toast.error('Error al cambiar contraseña')
     else { toast.success('Contraseña actualizada'); resetPwd() }
     setSavingPwd(false)

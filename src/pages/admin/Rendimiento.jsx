@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { differenceInDays, parseISO, format } from 'date-fns'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { supabase } from '../../lib/supabase'
+import { api } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import {
   addPDFHeader, addPDFFooters, buildPeriodString, TABLE_STYLES,
@@ -44,30 +44,18 @@ export default function Rendimiento() {
     setLoading(true)
     setError(null)
     try {
-      let query = supabase
-        .from('leads')
-        .select('id, assigned_to, status, precio_cierre, created_at, last_activity_at')
-        .order('created_at', { ascending: false })
-
-      if (!isAdmin) query = query.eq('assigned_to', profile.id)
-      if (dateFrom)  query = query.gte('created_at', dateFrom)
-      if (dateTo)    query = query.lte('created_at', dateTo + 'T23:59:59')
-
-      const promises = [query]
-      if (isAdmin) {
-        promises.push(
-          supabase.from('profiles').select('id, nombre, email').in('role', ['admin', 'seller']).order('nombre')
-        )
-      }
-
-      const results = await Promise.all(promises)
-      const { data: leadsData, error: leadsErr } = results[0]
+      const { data: leadsData, error: leadsErr } = await api.leads.list()
       if (leadsErr) throw leadsErr
 
-      setLeads(leadsData ?? [])
+      let filtered = leadsData ?? []
+      if (!isAdmin) filtered = filtered.filter(l => l.assigned_to === profile.id)
+      if (dateFrom) filtered = filtered.filter(l => (l.created_at || '') >= dateFrom)
+      if (dateTo) filtered = filtered.filter(l => (l.created_at || '') <= dateTo + 'T23:59:59')
+
+      setLeads(filtered)
 
       if (isAdmin) {
-        const { data: staffData, error: staffErr } = results[1]
+        const { data: staffData, error: staffErr } = await api.profiles.list({ roles: ['admin', 'seller'], order: 'nombre' })
         if (staffErr) throw staffErr
         setStaff(staffData ?? [])
       }

@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { supabase } from '../../lib/supabase'
+import { api } from '../../lib/api'
 import { XMarkIcon, PhotoIcon } from '@heroicons/react/24/outline'
 
 const TRANSMISIONES = ['Manual', 'Automática']
@@ -49,18 +49,16 @@ export default function CarModal({ car, onClose, onSaved }) {
         toast.error(`${file.name}: máximo 5MB`)
         continue
       }
-      const path = `${carId}/${Date.now()}-${file.name}`
-      const { error } = await supabase.storage.from('car-images').upload(path, file)
+      const { data, error } = await api.upload.carImage(file, carId)
       if (error) { toast.error(`Error subiendo ${file.name}`); continue }
-      const { data: { publicUrl } } = supabase.storage.from('car-images').getPublicUrl(path)
-      setImages(prev => [...prev, publicUrl])
+      setImages(prev => [...prev, data.publicUrl])
     }
     setUploading(false)
   }
 
   async function removeImage(url) {
     const path = pathFromUrl(url)
-    if (path) await supabase.storage.from('car-images').remove([path])
+    if (path) await api.upload.remove(path.startsWith('car-images/') ? path : `car-images/${path}`)
     setImages(prev => prev.filter(u => u !== url))
   }
 
@@ -101,8 +99,8 @@ export default function CarModal({ car, onClose, onSaved }) {
     }
 
     const { error } = isEdit
-      ? await supabase.from('cars').update(payload).eq('id', car.id)
-      : await supabase.from('cars').insert([payload])
+      ? await api.cars.update(car.id, payload)
+      : await api.cars.create(payload)
 
     if (error) { toast.error('Error al guardar el auto'); return }
     toast.success(isEdit ? 'Auto actualizado' : 'Auto agregado')

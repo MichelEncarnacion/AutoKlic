@@ -1,0 +1,3 @@
+# Keep upload dirs in deploy package; files are user content.
+*
+!.gitignore

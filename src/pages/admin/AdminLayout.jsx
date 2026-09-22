@@ -2,8 +2,7 @@
 import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { supabase } from '../../lib/supabase'
-import { subDays } from 'date-fns'
+import { api } from '../../lib/api'
 import {
   ArchiveBoxIcon,
   UserGroupIcon,
@@ -42,17 +41,9 @@ export default function AdminLayout() {
 
   useEffect(() => {
     async function fetchStaleCount() {
-      const { data: setting } = await supabase
-        .from('settings')
-        .select('value')
-        .eq('key', 'follow_up_days')
-        .single()
+      const { data: setting } = await api.settings.get('follow_up_days')
       const days = Number(setting?.value ?? 3)
-      const cutoff = subDays(new Date(), days).toISOString()
-      const { count } = await supabase
-        .from('leads')
-        .select('id', { count: 'exact', head: true })
-        .or(`last_activity_at.lt.${cutoff},and(last_activity_at.is.null,created_at.lt.${cutoff})`)
+      const { count } = await api.leads.staleCount(days)
       setStaleCount(count ?? 0)
     }
     fetchStaleCount()

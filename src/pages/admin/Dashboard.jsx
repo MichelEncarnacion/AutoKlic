@@ -1,9 +1,9 @@
-import { useEffect, useState, useContext } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { Link } from 'react-router-dom'
 import { format, startOfWeek, isAfter } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { supabase } from '../../lib/supabase'
+import { api } from '../../lib/api'
 import {
   ArchiveBoxIcon,
   UserGroupIcon,
@@ -46,8 +46,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     Promise.all([
-      supabase.from('cars').select('id, marca, modelo, año, precio, status, visible, created_at'),
-      supabase.from('leads').select('id, nombre, marca, modelo, año, status, assigned_to, created_at').order('created_at', { ascending: false }),
+      api.cars.list({ sort: 'newest' }),
+      api.leads.list(),
     ]).then(([{ data: c }, { data: l }]) => {
       setCars(c ?? [])
       setLeads(l ?? [])

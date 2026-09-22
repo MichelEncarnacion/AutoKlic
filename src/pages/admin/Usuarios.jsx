@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { XMarkIcon, UserPlusIcon, TrashIcon, NoSymbolIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
 import { useAuth } from '../../context/AuthContext'
 import toast from 'react-hot-toast'
-import { supabase } from '../../lib/supabase'
+import { api, getToken } from '../../lib/api'
 
 const ROLES = ['admin', 'seller', 'viewer']
 const ROLE_LABELS = { admin: 'Admin', seller: 'Vendedor', viewer: 'Visor' }
@@ -34,29 +34,23 @@ export default function Usuarios() {
     return true
   })
 
-  async function getToken() {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
+  async function ensureToken() {
+    const token = getToken()
+    if (!token) {
       toast.error('Sesión expirada, vuelve a iniciar sesión')
       return null
     }
-    return session.access_token
+    return token
   }
 
   async function toggleActive(u) {
-    const token = await getToken()
-    if (!token) return
+    if (!(await ensureToken())) return
     setToggling(u.id)
     try {
       const newActive = u.active === false
-      const res = await fetch('/api/toggle-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ userId: u.id, active: newActive }),
-      })
-      const result = await res.json()
-      if (!res.ok) {
-        toast.error(result.error ?? 'Error al actualizar usuario')
+      const { data: result, error } = await api.users.toggle(u.id, newActive)
+      if (error) {
+        toast.error(error.message ?? 'Error al actualizar usuario')
       } else {
         toast.success(newActive ? 'Usuario reactivado' : 'Usuario desactivado')
         setUsers(prev => prev.map(x => x.id === u.id ? { ...x, active: result.active } : x))
@@ -68,18 +62,12 @@ export default function Usuarios() {
 
   async function confirmAndDelete() {
     if (!confirmDelete) return
-    const token = await getToken()
-    if (!token) { setConfirmDelete(null); return }
+    if (!(await ensureToken())) { setConfirmDelete(null); return }
     setDeleting(true)
     try {
-      const res = await fetch('/api/delete-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ userId: confirmDelete.id }),
-      })
-      const result = await res.json()
-      if (!res.ok) {
-        toast.error(result.error ?? 'Error al eliminar usuario')
+      const { error } = await api.users.remove(confirmDelete.id)
+      if (error) {
+        toast.error(error.message ?? 'Error al eliminar usuario')
       } else {
         toast.success('Usuario eliminado permanentemente')
         setUsers(prev => prev.filter(x => x.id !== confirmDelete.id))
@@ -96,13 +84,13 @@ export default function Usuarios() {
 
   async function loadUsers() {
     setLoading(true)
-    const { data } = await supabase.from('profiles').select('*').order('email')
+    const { data } = await api.profiles.list({ order: 'email' })
     setUsers(data ?? [])
     setLoading(false)
   }
 
   async function updateRole(id, role) {
-    const { error } = await supabase.from('profiles').update({ role }).eq('id', id)
+    const { error } = await api.profiles.update(id, { role })
     if (error) toast.error('Error al actualizar rol')
     else {
       toast.success('Rol actualizado')
@@ -111,9 +99,7 @@ export default function Usuarios() {
   }
 
   async function sendPasswordReset(email) {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    })
+    const { error } = await api.auth.requestReset(email, `${window.location.origin}/reset-password`)
     if (error) toast.error('Error al enviar correo')
     else toast.success('Correo de restablecimiento enviado')
   }
@@ -122,22 +108,12 @@ export default function Usuarios() {
     e.preventDefault()
     setSaving(true)
 
-    const token = await getToken()
-    if (!token) { setSaving(false); return }
+    if (!(await ensureToken())) { setSaving(false); return }
 
-    const res = await fetch('/api/create-user', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(form),
-    })
+    const { data: result, error } = await api.users.create(form)
 
-    const result = await res.json()
-
-    if (!res.ok) {
-      toast.error(result.error ?? 'Error al crear usuario')
+    if (error) {
+      toast.error(error.message ?? 'Error al crear usuario')
       setSaving(false)
       return
     }
