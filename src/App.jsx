@@ -7,7 +7,9 @@ import SEO from './components/SEO'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import Hero from './components/Hero'
+import TrustBand from './components/TrustBand'
 import FeaturedCars from './components/FeaturedCars'
+import SellBand from './components/SellBand'
 import Process from './components/Process'
 import ContactForm from './components/ContactForm'
 
@@ -66,7 +68,7 @@ export default function App() {
             description="AutoKlic es tu agencia de autos seminuevos en Puebla, México. Encuentra vehículos verificados, valuación gratuita y vende tu auto rápido y seguro."
             url="/"
           />
-          <Hero /><FeaturedCars /><Process /><ContactForm />
+          <Hero /><TrustBand /><FeaturedCars /><SellBand /><Process /><ContactForm />
         </PublicLayout>
       } />
       <Route path="/autos/:modelo" element={<PublicLayout><AutoDetalle /></PublicLayout>} />

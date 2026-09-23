@@ -63,8 +63,12 @@ export default function ContactForm() {
     'w-full px-4 py-3 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-400 transition-all';
 
   return (
-    <section id="contacto" className="py-20 sm:py-28 bg-gray-50" data-aos="fade-up">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+    <section id="contacto" className="relative overflow-hidden bg-neutral-100 py-16 sm:py-24" data-aos="fade-up">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-neutral-950/5 to-transparent"
+        aria-hidden="true"
+      />
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
         <div className="text-center mb-14">
           <p className="flex items-center justify-center gap-2 text-red-500 text-xs font-semibold tracking-widest uppercase mb-4">
             <span className="w-6 h-px bg-red-500" />

@@ -1,5 +1,6 @@
 // src/pages/Catalogo.jsx
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { AdjustmentsHorizontalIcon, XMarkIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 import { listPublicCars, listAllPublicCars } from '../lib/publicCars'
 import SEO from '../components/SEO'
@@ -18,15 +19,32 @@ const SORT_OPTIONS = [
 ]
 
 export default function Catalogo() {
+  const [searchParams] = useSearchParams()
   const [cars, setCars]           = useState([])
   const [total, setTotal]         = useState(0)
   const [page, setPage]           = useState(1)
   const [loading, setLoading]     = useState(true)
-  const [filters, setFilters]     = useState(EMPTY_FILTERS)
+  const [filters, setFilters]     = useState(() => ({
+    ...EMPTY_FILTERS,
+    marca: searchParams.get('marca') || '',
+    minPrecio: searchParams.get('minPrecio') || '',
+    maxPrecio: searchParams.get('maxPrecio') || '',
+  }))
   const [showFilters, setShowFilters] = useState(false)
   const [sortBy, setSortBy]       = useState('newest')
   const [marcas, setMarcas]       = useState([])
   const [transmisiones, setTransmisiones] = useState([])
+
+  // Sync filters when landing search / brand chips change the query string
+  useEffect(() => {
+    setPage(1)
+    setFilters((prev) => ({
+      ...prev,
+      marca: searchParams.get('marca') || '',
+      minPrecio: searchParams.get('minPrecio') || '',
+      maxPrecio: searchParams.get('maxPrecio') || '',
+    }))
+  }, [searchParams])
 
   // Load filter options once
   useEffect(() => {
