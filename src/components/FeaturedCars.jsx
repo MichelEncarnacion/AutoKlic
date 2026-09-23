@@ -1,129 +1,131 @@
-// src/components/FeaturedCars.jsx
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRightIcon } from '@heroicons/react/24/outline';
-import { api } from '../lib/api';
-import { formatPrice, toSlug } from '../lib/utils';
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { ArrowRightIcon } from '@heroicons/react/24/outline'
+import { FaWhatsapp } from 'react-icons/fa'
+import CarCard from './CarCard'
+import { listPublicCars, listAllPublicCars } from '../lib/publicCars'
+import { whatsappUrl } from '../lib/contact'
 
 export default function FeaturedCars() {
-  const [autos, setAutos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [autos, setAutos] = useState([])
+  const [marcas, setMarcas] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api.cars.list({ public: 1, limit: 3, sort: 'newest' }).then(({ data }) => {
-      setAutos(data ?? []);
-      setLoading(false);
-    });
-  }, []);
+    Promise.all([
+      listPublicCars({ limit: 6, sort: 'newest' }),
+      listAllPublicCars(),
+    ]).then(([featured, all]) => {
+      setAutos(featured.data ?? [])
+      const m = [...new Set((all.data ?? []).map((c) => c.marca).filter(Boolean))].sort()
+      setMarcas(m)
+      setLoading(false)
+    })
+  }, [])
 
   return (
-    <section id="autos" className="py-20 sm:py-28 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+    <section
+      id="autos"
+      className="relative overflow-hidden py-16 sm:py-24"
+      style={{
+        background: 'linear-gradient(180deg, #0a0a0b 0%, #141416 12%, #f4f4f5 12%, #f4f4f5 100%)',
+      }}
+    >
+      <div
+        className="pointer-events-none absolute inset-x-0 top-[12%] h-32 bg-gradient-to-b from-red-600/10 to-transparent"
+        aria-hidden="true"
+      />
 
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-14">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="flex items-center gap-2 text-red-500 text-xs font-semibold tracking-widest uppercase mb-3">
-              <span className="w-6 h-px bg-red-500" />
-              Inventario destacado
+            <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-red-500">
+              <span className="h-px w-6 bg-red-500" />
+              Inventario en Puebla
             </p>
-            <h2 className="font-heading text-4xl sm:text-5xl font-bold text-gray-900">
+            <h2 className="font-heading text-4xl font-bold tracking-tight text-neutral-900 sm:text-5xl">
               Autos destacados
             </h2>
+            <p className="mt-2 max-w-md text-sm text-neutral-500">
+              Precio y specs al frente. Filtra por marca o abre el catálogo completo.
+            </p>
           </div>
           <Link
             to="/catalogo"
-            className="flex items-center gap-2 text-sm font-semibold text-red-600 hover:text-red-700 transition-colors shrink-0"
+            className="inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-red-600 hover:text-red-700"
           >
             Ver catálogo completo
             <ArrowRightIcon className="h-4 w-4" />
           </Link>
         </div>
 
-        {/* Skeleton / Cards */}
-        {loading ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-gray-100 rounded-2xl h-80 animate-pulse" />
+        {/* Brand chips — Seminuevos / Kavak entry pattern */}
+        {marcas.length > 0 && (
+          <div className="mb-8 flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
+            <Link
+              to="/catalogo"
+              className="shrink-0 border border-neutral-900 bg-neutral-900 px-3.5 py-1.5 text-xs font-semibold text-white"
+            >
+              Todos
+            </Link>
+            {marcas.map((m) => (
+              <Link
+                key={m}
+                to={`/catalogo?marca=${encodeURIComponent(m)}`}
+                className="shrink-0 border border-neutral-300 bg-white px-3.5 py-1.5 text-xs font-semibold text-neutral-700 transition-colors hover:border-red-500 hover:text-red-600"
+              >
+                {m}
+              </Link>
             ))}
-          </div>
-        ) : autos.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">
-            <p className="text-lg font-medium">Próximamente nuevos vehículos</p>
-            <p className="text-sm mt-2">Visita el catálogo o contáctanos para más información.</p>
-          </div>
-        ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {autos.map((auto) => {
-              const slug = toSlug(auto.modelo);
-              const imagen = Array.isArray(auto.imagenes) && auto.imagenes.length > 0
-                ? auto.imagenes[0]
-                : null;
-              const isPremium = auto.precio >= 400000;
-
-              return (
-                <Link
-                  to={`/autos/${slug}`}
-                  key={auto.id}
-                  className="group bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300"
-                >
-                  {/* Image */}
-                  <div className="relative overflow-hidden aspect-[16/10] bg-gray-100">
-                    {imagen ? (
-                      <img
-                        src={imagen}
-                        alt={`${auto.marca} ${auto.modelo}`}
-                        loading="lazy"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300 text-sm">
-                        Sin imagen
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <span className={`absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full ${
-                      isPremium
-                        ? 'bg-amber-400 text-amber-900'
-                        : 'bg-white/90 text-gray-700'
-                    }`}>
-                      {isPremium ? 'Premium' : 'Disponible'}
-                    </span>
-                  </div>
-
-                  {/* Info */}
-                  <div className="p-5">
-                    <p className="text-xs text-gray-400 font-medium mb-1 uppercase tracking-wider">{auto.marca}</p>
-                    <h3 className="font-heading text-lg font-bold text-gray-900 mb-3 leading-snug">
-                      {auto.modelo} {auto.año}
-                    </h3>
-                    <div className="flex items-center justify-between">
-                      <p className="text-red-600 font-bold text-xl font-heading">
-                        {formatPrice(auto.precio)}
-                      </p>
-                      <span className="flex items-center gap-1 text-xs font-semibold text-gray-400 group-hover:text-red-500 transition-colors">
-                        Ver detalles
-                        <ArrowRightIcon className="h-3.5 w-3.5" />
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
           </div>
         )}
 
-        {/* Bottom CTA */}
-        <div className="mt-12 text-center">
-          <Link
-            to="/catalogo"
-            className="inline-flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white px-8 py-3.5 rounded-lg text-sm font-semibold tracking-wide transition-all duration-200 hover:shadow-lg"
-          >
-            Ver todos los autos
-            <ArrowRightIcon className="h-4 w-4" />
-          </Link>
-        </div>
+        {loading ? (
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="aspect-[4/3] bg-neutral-200" />
+                <div className="mt-4 h-5 w-3/4 bg-neutral-200" />
+                <div className="mt-2 h-4 w-1/2 bg-neutral-200" />
+                <div className="mt-4 h-8 w-1/3 bg-neutral-200" />
+              </div>
+            ))}
+          </div>
+        ) : autos.length === 0 ? (
+          <div className="border border-dashed border-neutral-300 bg-white px-4 py-14 text-center">
+            <p className="font-heading text-lg font-bold text-neutral-900">Inventario en actualización</p>
+            <p className="mx-auto mt-2 max-w-md text-sm text-neutral-500">
+              Escríbenos y te ayudamos a encontrar tu próximo auto.
+            </p>
+            <a
+              href={whatsappUrl('Hola, busco un auto. ¿Me ayudan con el inventario?')}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-6 inline-flex items-center gap-2 bg-[#25D366] px-6 py-3 text-sm font-semibold text-white hover:bg-[#1ebe5b]"
+            >
+              <FaWhatsapp className="h-4 w-4" /> WhatsApp
+            </a>
+          </div>
+        ) : (
+          <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+            {autos.map((auto) => (
+              <CarCard key={auto.id} car={auto} />
+            ))}
+          </div>
+        )}
+
+        {autos.length > 0 && (
+          <div className="mt-12 text-center">
+            <Link
+              to="/catalogo"
+              className="inline-flex items-center gap-2 bg-neutral-950 px-8 py-3.5 text-sm font-semibold tracking-wide text-white transition-colors hover:bg-red-600"
+            >
+              Ver todos los autos
+              <ArrowRightIcon className="h-4 w-4" />
+            </Link>
+          </div>
+        )}
       </div>
     </section>
-  );
+  )
 }

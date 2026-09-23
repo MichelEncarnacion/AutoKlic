@@ -1,9 +1,10 @@
 import { FaWhatsapp } from 'react-icons/fa'
+import { whatsappUrl } from '../lib/contact'
 
 export default function WhatsAppButton() {
   return (
     <a
-      href="https://wa.me/522213411834?text=Hola%2C%20me%20interesa%20un%20auto%20de%20AutoKlic."
+      href={whatsappUrl('Hola, me interesa un auto de AutoKlic.')}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Contactar por WhatsApp"

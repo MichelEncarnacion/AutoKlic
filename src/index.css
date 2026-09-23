@@ -40,4 +40,54 @@
   .font-heading {
     font-family: var(--font-heading);
   }
+
+  .ak-reveal {
+    animation: ak-fade-up 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .ak-reveal-delay-1 {
+    animation-delay: 0.12s;
+  }
+
+  .ak-reveal-delay-2 {
+    animation-delay: 0.24s;
+  }
+
+  .ak-reveal-delay-3 {
+    animation-delay: 0.36s;
+  }
+
+  .ak-pulse-glow {
+    animation: ak-glow 5s ease-in-out infinite;
+  }
+}
+
+@keyframes ak-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ak-glow {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ak-reveal,
+  .ak-pulse-glow {
+    animation: none !important;
+  }
 }

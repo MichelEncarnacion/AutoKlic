@@ -4,6 +4,8 @@ import { ChevronUpIcon } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
 import logo from '../assets/logo.png';
 
+import { CONTACT, whatsappUrl } from '../lib/contact';
+
 const socialLinks = [
   {
     icon: FaFacebookF,
@@ -17,21 +19,21 @@ const socialLinks = [
   },
   {
     icon: FaWhatsapp,
-    href: 'https://wa.me/522201895426',
+    href: whatsappUrl(),
     label: 'WhatsApp',
   },
 ];
 
 const quickLinks = [
   { name: 'Inicio', href: '/#inicio' },
-  { name: 'Vehículos', href: '/#autos' },
   { name: 'Proceso', href: '/#proceso' },
   { name: 'Contacto', href: '/#contacto' },
 ];
 
 const pageLinks = [
-  { name: 'Catálogo', to: '/catalogo' },
+  { name: 'Inventario', to: '/catalogo' },
   { name: 'Vende tu Auto', to: '/vende-tu-auto' },
+  { name: 'Valúa tu Auto', to: '/valua-tu-auto' },
 ];
 
 export default function Footer() {
@@ -46,7 +48,9 @@ export default function Footer() {
           <div className="sm:col-span-2 lg:col-span-1">
             <div className="flex items-center gap-2.5 mb-4">
               <img src={logo} alt="AutoKlic" className="h-10 w-auto" />
-              <span className="font-heading text-xl font-bold text-white">AutoKlic</span>
+              <span className="font-heading text-xl font-bold text-white">
+                Auto<span className="text-amber-400">Klic</span>
+              </span>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed mb-6">
               Compra o vende tu vehículo con seguridad, rapidez y confianza en Puebla, México.
@@ -104,17 +108,17 @@ export default function Footer() {
             </h3>
             <ul className="space-y-3 text-sm text-gray-400">
               <li>
-                <a href="tel:+522201895426" className="hover:text-white transition-colors">
-                  +52 220 189 5426
+                <a href={`tel:${CONTACT.phoneTel}`} className="hover:text-white transition-colors">
+                  {CONTACT.phoneDisplay}
                 </a>
               </li>
               <li>
-                <a href="mailto:contacto@autoklic.mx" className="hover:text-white transition-colors">
-                  contacto@autoklic.mx
+                <a href={`mailto:${CONTACT.email}`} className="hover:text-white transition-colors">
+                  {CONTACT.email}
                 </a>
               </li>
               <li className="leading-relaxed">
-                Blvd. Atlixco 2305, Belisario Domínguez, 72180 Puebla, Pue.
+                {CONTACT.addressShort}
               </li>
             </ul>
           </div>

@@ -19,6 +19,10 @@ Tras importar `sql/schema.sql` + `sql/seed-admin.sql` (con un hash que **tú** g
 
 Catálogo, leads y compras empiezan vacíos (sin import de Supabase).
 
+**Inventario demo (opcional):** importar `sql/seed-cars-mock.sql` en phpMyAdmin
+para 8 seminuevos con fotos en `/autos/*`. El frontend también usa esos mocks
+si la API pública responde vacío (útil hasta que cargues unidades reales).
+
 ---
 
 ## Qué crear en cPanel (Michel)
@@ -72,6 +76,7 @@ npm run build
 
 1. Importar `sql/schema.sql`
 2. Importar `sql/seed-admin.sql`
+3. (Opcional) Importar `sql/seed-cars-mock.sql` — inventario demo
 
 ### C. Config PHP
 

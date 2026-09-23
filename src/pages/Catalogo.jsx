@@ -1,11 +1,10 @@
 // src/pages/Catalogo.jsx
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { AdjustmentsHorizontalIcon, XMarkIcon, ArrowRightIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
-import { api } from '../lib/api'
+import { useSearchParams } from 'react-router-dom'
+import { AdjustmentsHorizontalIcon, XMarkIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
+import { listPublicCars, listAllPublicCars } from '../lib/publicCars'
 import SEO from '../components/SEO'
-import { formatPrice, toSlug } from '../lib/utils'
-import { CAR_STATUS_LABELS as STATUS_LABELS, CAR_STATUS_COLORS as STATUS_COLORS } from '../lib/constants'
+import CarCard from '../components/CarCard'
 
 const PAGE_SIZE = 12
 
@@ -20,19 +19,36 @@ const SORT_OPTIONS = [
 ]
 
 export default function Catalogo() {
+  const [searchParams] = useSearchParams()
   const [cars, setCars]           = useState([])
   const [total, setTotal]         = useState(0)
   const [page, setPage]           = useState(1)
   const [loading, setLoading]     = useState(true)
-  const [filters, setFilters]     = useState(EMPTY_FILTERS)
+  const [filters, setFilters]     = useState(() => ({
+    ...EMPTY_FILTERS,
+    marca: searchParams.get('marca') || '',
+    minPrecio: searchParams.get('minPrecio') || '',
+    maxPrecio: searchParams.get('maxPrecio') || '',
+  }))
   const [showFilters, setShowFilters] = useState(false)
   const [sortBy, setSortBy]       = useState('newest')
   const [marcas, setMarcas]       = useState([])
   const [transmisiones, setTransmisiones] = useState([])
 
+  // Sync filters when landing search / brand chips change the query string
+  useEffect(() => {
+    setPage(1)
+    setFilters((prev) => ({
+      ...prev,
+      marca: searchParams.get('marca') || '',
+      minPrecio: searchParams.get('minPrecio') || '',
+      maxPrecio: searchParams.get('maxPrecio') || '',
+    }))
+  }, [searchParams])
+
   // Load filter options once
   useEffect(() => {
-    api.cars.list({ public: 1 }).then(({ data }) => {
+    listAllPublicCars().then(({ data }) => {
       const d = data ?? []
       setMarcas([...new Set(d.map(c => c.marca).filter(Boolean))].sort())
       setTransmisiones([...new Set(d.map(c => c.transmision).filter(Boolean))].sort())
@@ -43,8 +59,7 @@ export default function Catalogo() {
   useEffect(() => {
     setLoading(true)
     const from = (page - 1) * PAGE_SIZE
-    api.cars.list({
-      public: 1,
+    listPublicCars({
       marca: filters.marca || undefined,
       transmision: filters.transmision || undefined,
       minPrecio: filters.minPrecio || undefined,
@@ -182,60 +197,24 @@ export default function Catalogo() {
             </div>
           ) : cars.length === 0 ? (
             <div className="text-center py-20">
-              <p className="text-4xl mb-4">🔍</p>
-              <p className="font-semibold text-gray-700 mb-1">Sin resultados</p>
-              <p className="text-sm text-gray-400 mb-6">No hay autos con los filtros seleccionados.</p>
-              <button
-                onClick={() => { setPage(1); setFilters(EMPTY_FILTERS) }}
-                className="text-sm font-semibold text-red-600 hover:text-red-700 transition-colors"
-              >
-                Limpiar filtros
-              </button>
+              <p className="font-heading text-xl font-bold text-gray-900 mb-2">Sin resultados</p>
+              <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
+                No hay autos con estos filtros. Prueba limpiar o escríbenos por WhatsApp.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  onClick={() => { setPage(1); setFilters(EMPTY_FILTERS) }}
+                  className="text-sm font-semibold text-red-600 hover:text-red-700 transition-colors"
+                >
+                  Limpiar filtros
+                </button>
+              </div>
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 xl:grid-cols-3">
                 {cars.map(car => (
-                  <Link
-                    key={car.id}
-                    to={`/autos/${toSlug(car.modelo)}`}
-                    className="group bg-white rounded-2xl border border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300"
-                  >
-                    <div className="relative aspect-[16/10] bg-gray-100 overflow-hidden">
-                      {car.imagenes?.[0] ? (
-                        <img
-                          src={car.imagenes[0]}
-                          alt={`${car.marca} ${car.modelo}`}
-                          loading="lazy"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-300 text-sm">
-                          Sin imagen
-                        </div>
-                      )}
-                      {car.estado && (
-                        <span className={`absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_COLORS[car.estado] ?? 'bg-gray-100 text-gray-600'}`}>
-                          {STATUS_LABELS[car.estado] ?? car.estado}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="p-4">
-                      <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-0.5">{car.marca}</p>
-                      <h3 className="font-heading text-base font-bold text-gray-900 leading-snug">{car.modelo}</h3>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {car.año}{car.kilometraje ? ` · ${Number(car.kilometraje).toLocaleString('es-MX')} km` : ''}
-                      </p>
-                      <div className="flex items-center justify-between mt-3">
-                        <p className="font-heading text-lg font-bold text-red-600">{formatPrice(car.precio)}</p>
-                        <span className="flex items-center gap-1 text-xs font-semibold text-gray-400 group-hover:text-red-500 transition-colors">
-                          Ver más
-                          <ArrowRightIcon className="h-3.5 w-3.5" />
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
+                  <CarCard key={car.id} car={car} />
                 ))}
               </div>
 
