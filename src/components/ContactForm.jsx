@@ -63,22 +63,18 @@ export default function ContactForm() {
     'w-full px-4 py-3 text-sm border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-400 transition-all';
 
   return (
-    <section id="contacto" className="relative overflow-hidden bg-neutral-100 py-16 sm:py-24" data-aos="fade-up">
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-neutral-950/5 to-transparent"
-        aria-hidden="true"
-      />
+    <section id="contacto" className="relative bg-neutral-100 py-16 sm:py-24" data-aos="fade-up">
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="text-center mb-14">
-          <p className="flex items-center justify-center gap-2 text-red-500 text-xs font-semibold tracking-widest uppercase mb-4">
-            <span className="w-6 h-px bg-red-500" />
+        <div className="mb-14 text-center">
+          <p className="mb-4 flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-widest text-red-600">
+            <span className="h-px w-6 bg-red-600" />
             Estamos para ti
-            <span className="w-6 h-px bg-red-500" />
+            <span className="h-px w-6 bg-red-600" />
           </p>
-          <h2 className="font-heading text-4xl sm:text-5xl font-bold text-gray-900">
+          <h2 className="font-heading text-4xl font-bold text-neutral-900 sm:text-5xl">
             Contáctanos
           </h2>
-          <p className="text-gray-500 mt-4 max-w-md mx-auto text-sm leading-relaxed">
+          <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-neutral-600">
             Lo más rápido: WhatsApp. Si prefieres, déjanos un mensaje corto y te respondemos.
           </p>
         </div>

@@ -28,17 +28,17 @@ const caminos = [
 
 export default function Process() {
   return (
-    <section id="proceso" className="overflow-hidden bg-neutral-950 py-16 text-white sm:py-24">
+    <section id="proceso" className="bg-neutral-950 py-16 text-white sm:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div className="mb-10 max-w-2xl sm:mb-12">
           <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-red-400">
             <span className="h-px w-6 bg-red-400" />
             Simple y transparente
           </p>
-          <h2 className="font-heading text-4xl font-bold tracking-tight sm:text-5xl">
+          <h2 className="font-heading text-4xl font-bold tracking-tight text-white sm:text-5xl">
             ¿Cómo te ayudamos?
           </h2>
-          <p className="mt-3 text-sm leading-relaxed text-neutral-400">
+          <p className="mt-3 text-sm leading-relaxed text-neutral-300">
             Elige tu camino. Misma agencia en Puebla — compra o vende sin pasos confusos.
           </p>
         </div>
