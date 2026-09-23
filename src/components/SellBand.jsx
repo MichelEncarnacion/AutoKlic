@@ -4,12 +4,12 @@ import { ArrowRightIcon } from '@heroicons/react/24/outline'
 /** Nowy-style dual CTA band: sell / value your car */
 export default function SellBand() {
   return (
-    <section className="relative overflow-hidden bg-red-600">
+    <section className="relative bg-red-600">
       <div
         className="pointer-events-none absolute -right-20 top-0 h-56 w-56 rounded-full bg-amber-400/20 blur-3xl"
         aria-hidden="true"
       />
-      <div className="relative mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-4 py-12 sm:flex-row sm:items-center sm:px-6 sm:py-14">
+      <div className="relative mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-4 py-14 sm:flex-row sm:items-center sm:px-6 sm:py-16">
         <div className="max-w-xl">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
             ¿Tienes un auto?

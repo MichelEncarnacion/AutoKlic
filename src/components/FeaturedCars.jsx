@@ -26,27 +26,25 @@ export default function FeaturedCars() {
   return (
     <section
       id="autos"
-      className="relative overflow-hidden py-16 sm:py-24"
-      style={{
-        background: 'linear-gradient(180deg, #0a0a0b 0%, #141416 12%, #f4f4f5 12%, #f4f4f5 100%)',
-      }}
+      className="relative bg-neutral-100 py-16 sm:py-24"
     >
+      {/* Soft light wash only — never a dark band over dark headlines */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-[12%] h-32 bg-gradient-to-b from-red-600/10 to-transparent"
+        className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-red-600/[0.06] to-transparent"
         aria-hidden="true"
       />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
         <div className="mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-red-500">
-              <span className="h-px w-6 bg-red-500" />
+            <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-red-600">
+              <span className="h-px w-6 bg-red-600" />
               Inventario en Puebla
             </p>
             <h2 className="font-heading text-4xl font-bold tracking-tight text-neutral-900 sm:text-5xl">
               Autos destacados
             </h2>
-            <p className="mt-2 max-w-md text-sm text-neutral-500">
+            <p className="mt-2 max-w-md text-sm text-neutral-600">
               Precio y specs al frente. Filtra por marca o abre el catálogo completo.
             </p>
           </div>
