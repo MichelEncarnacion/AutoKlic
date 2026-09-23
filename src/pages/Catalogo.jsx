@@ -1,11 +1,9 @@
 // src/pages/Catalogo.jsx
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { AdjustmentsHorizontalIcon, XMarkIcon, ArrowRightIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
+import { AdjustmentsHorizontalIcon, XMarkIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 import { listPublicCars, listAllPublicCars } from '../lib/publicCars'
 import SEO from '../components/SEO'
-import { formatPrice, toSlug } from '../lib/utils'
-import { CAR_STATUS_LABELS as STATUS_LABELS, CAR_STATUS_COLORS as STATUS_COLORS } from '../lib/constants'
+import CarCard from '../components/CarCard'
 
 const PAGE_SIZE = 12
 
@@ -196,52 +194,9 @@ export default function Catalogo() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 xl:grid-cols-3">
                 {cars.map(car => (
-                  <Link
-                    key={car.id}
-                    to={`/autos/${toSlug(car.modelo)}`}
-                    className="group bg-white rounded-2xl border border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300"
-                  >
-                    <div className="relative aspect-[16/10] bg-gray-100 overflow-hidden">
-                      {car.imagenes?.[0] ? (
-                        <img
-                          src={car.imagenes[0]}
-                          alt={`${car.marca} ${car.modelo}`}
-                          loading="lazy"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-300 text-sm">
-                          Sin imagen
-                        </div>
-                      )}
-                      {car.estado || car.status ? (
-                        <span className={`absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_COLORS[car.estado || car.status] ?? 'bg-gray-100 text-gray-600'}`}>
-                          {STATUS_LABELS[car.estado || car.status] ?? car.estado ?? car.status}
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <div className="p-4">
-                      <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-0.5">{car.marca}</p>
-                      <h3 className="font-heading text-base font-bold text-gray-900 leading-snug">{car.modelo}</h3>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {[
-                          car.año,
-                          car.kilometraje ? `${Number(car.kilometraje).toLocaleString('es-MX')} km` : null,
-                          car.transmision,
-                        ].filter(Boolean).join(' · ')}
-                      </p>
-                      <div className="flex items-end justify-between mt-3 gap-2">
-                        <p className="font-heading text-xl font-bold text-red-600 leading-none">{formatPrice(car.precio)}</p>
-                        <span className="flex items-center gap-1 text-xs font-semibold text-gray-400 group-hover:text-red-500 transition-colors shrink-0">
-                          Ver más
-                          <ArrowRightIcon className="h-3.5 w-3.5" />
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
+                  <CarCard key={car.id} car={car} />
                 ))}
               </div>
 
